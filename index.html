@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Natural Frequency — Tuning Fork Visualizer</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    background: #f8f8f6;
+    color: #1a1a1a;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    body { background: #1a1a1a; color: #e0e0e0; }
+    .card { background: #242424; border-color: rgba(255,255,255,0.1); }
+    .metric { background: #2e2e2e; }
+    .metric-label { color: #888; }
+    canvas { border-color: rgba(255,255,255,0.12); }
+    button { background: transparent; border-color: rgba(255,255,255,0.2); color: #e0e0e0; }
+    button:hover { background: rgba(255,255,255,0.07); }
+    .note-box { background: rgba(55,138,221,0.12); border-color: rgba(55,138,221,0.3); color: #a8c8f0; }
+    input[type=range]::-webkit-slider-runnable-track { background: rgba(255,255,255,0.15); }
+  }
+
+  .card {
+    background: #ffffff;
+    border: 0.5px solid rgba(0,0,0,0.12);
+    border-radius: 16px;
+    padding: 28px 28px 24px;
+    width: 100%;
+    max-width: 780px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+  }
+
+  h1 {
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    letter-spacing: -0.01em;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .subtitle { color: #999; }
+  }
+
+  .layout {
+    display: flex;
+    gap: 28px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .fork-col {
+    flex: 0 0 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .wave-col { flex: 1; min-width: 260px; }
+
+  canvas {
+    width: 100%;
+    height: auto;
+    border: 0.5px solid rgba(0,0,0,0.1);
+    border-radius: 10px;
+    display: block;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 2px;
+  }
+
+  button {
+    padding: 7px 18px;
+    border: 0.5px solid rgba(0,0,0,0.18);
+    border-radius: 8px;
+    background: transparent;
+    color: #333;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background .15s, transform .1s;
+  }
+  button:hover { background: rgba(0,0,0,0.04); }
+  button:active { transform: scale(0.97); }
+  button.primary {
+    background: #1F3864;
+    color: #fff;
+    border-color: #1F3864;
+  }
+  button.primary:hover { background: #2e4f8a; }
+
+  .metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .metric {
+    background: #f4f4f2;
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+
+  .metric-label {
+    font-size: 10px;
+    color: #888;
+    margin-bottom: 2px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+
+  .metric-value {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  .slider-row {
+    margin-top: 14px;
+  }
+
+  .slider-row label {
+    font-size: 11px;
+    color: #666;
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .slider-row label { color: #999; }
+  }
+
+  .slider-track {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .slider-track span {
+    font-size: 11px;
+    color: #aaa;
+    min-width: 28px;
+  }
+
+  input[type=range] {
+    flex: 1;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: rgba(0,0,0,0.12);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #1F3864;
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.15);
+  }
+
+  .status-box {
+    margin-top: 12px;
+    font-size: 12px;
+    color: #555;
+    min-height: 36px;
+    line-height: 1.6;
+    padding: 8px 10px;
+    background: rgba(0,0,0,0.03);
+    border-radius: 8px;
+    border-left: 3px solid #378ADD;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .status-box { background: rgba(255,255,255,0.04); color: #aaa; }
+  }
+
+  .legend {
+    display: flex;
+    gap: 16px;
+    margin-top: 8px;
+    font-size: 11px;
+    color: #888;
+  }
+
+  .legend span { display: flex; align-items: center; gap: 5px; }
+  .legend .dot { width: 22px; height: 2px; border-radius: 1px; }
+
+  .note-box {
+    margin-top: 20px;
+    padding: 12px 14px;
+    background: rgba(55,138,221,0.08);
+    border-left: 3px solid #378ADD;
+    border-radius: 0 8px 8px 0;
+    font-size: 12px;
+    color: #1a4a7a;
+    line-height: 1.6;
+  }
+
+  .formula {
+    text-align: center;
+    font-size: 15px;
+    letter-spacing: 0.02em;
+    margin: 10px 0 4px;
+    color: #333;
+    font-weight: 500;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .formula { color: #ccc; }
+  }
+
+  @keyframes strike {
+    0%   { transform: rotate(0deg); }
+    15%  { transform: rotate(-18deg); }
+    30%  { transform: rotate(4deg); }
+    50%  { transform: rotate(0deg); }
+    100% { transform: rotate(0deg); }
+  }
+
+  @keyframes hammer-hit {
+    0%,60%,100% { transform: translate(0,0) rotate(-30deg); }
+    25%          { transform: translate(18px,10px) rotate(-30deg); }
+  }
+
+  .fork-group { transform-origin: 300px 240px; }
+  .fork-group.ringing { animation: strike 0.4s ease-out forwards; }
+  .hammer { transform-origin: 240px 195px; transform: rotate(-30deg); }
+  .hammer.hitting { animation: hammer-hit 0.35s ease-in-out forwards; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>Natural Frequency — Interactive Visualizer</h1>
+  <p class="subtitle">Every structure vibrates at its own fixed frequency when disturbed. Strike the fork and watch it vibrate at that frequency, then fade away — the frequency never changes, only the amplitude does.</p>
+
+  <div class="layout">
+
+    <!-- Fork column -->
+    <div class="fork-col">
+      <svg id="fork-svg" width="200" height="280" viewBox="160 80 220 260">
+        <g class="fork-group" id="fork-group">
+          <path id="tine-l" d="M 294 200 Q 280 160 286 120"
+            fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>
+          <path id="tine-r" d="M 306 200 Q 320 160 314 120"
+            fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>
+          <rect x="294" y="198" width="12" height="70" rx="4" fill="currentColor"/>
+          <rect x="284" y="264" width="32" height="10" rx="3" fill="currentColor"/>
+        </g>
+        <g class="hammer" id="hammer">
+          <rect x="198" y="178" width="40" height="16" rx="5" fill="#378ADD" opacity="0.85"/>
+          <rect x="230" y="165" width="6" height="30" rx="2" fill="#378ADD" opacity="0.7"/>
+        </g>
+        <text id="fn-tag" x="300" y="108" text-anchor="middle"
+          font-size="10" fill="#378ADD" font-family="inherit" opacity="0">fn</text>
+        <circle id="dot-l" cx="278" cy="130" r="4" fill="#EF9F27" opacity="0"/>
+        <circle id="dot-r" cx="322" cy="126" r="4" fill="#EF9F27" opacity="0"/>
+      </svg>
+
+      <div class="btn-row">
+        <button class="primary" onclick="strike()">Strike fork</button>
+        <button onclick="resetFork()">Reset</button>
+      </div>
+
+      <div class="formula">f<sub>n</sub> = <sup>1</sup>/<sub>2π</sub> √(k/m)</div>
+    </div>
+
+    <!-- Wave column -->
+    <div class="wave-col">
+      <p style="font-size:11px;color:#888;margin-bottom:6px;">Vibration amplitude over time</p>
+      <canvas id="wave-canvas" width="440" height="200"></canvas>
+
+      <div class="legend">
+        <span><span class="dot" style="background:#378ADD;"></span>vibration wave</span>
+        <span><span class="dot" style="background:#E24B4A;border-top:2px dashed #E24B4A;height:0;"></span>decay envelope</span>
+      </div>
+
+      <div class="metrics">
+        <div class="metric">
+          <div class="metric-label">Natural frequency</div>
+          <div class="metric-value" id="fn-val" style="color:#378ADD;">—</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Amplitude</div>
+          <div class="metric-value" id="amp-val" style="color:#EF9F27;">—</div>
+        </div>
+      </div>
+
+      <div class="slider-row">
+        <label>Stiffness (k) — higher stiffness raises natural frequency</label>
+        <div class="slider-track">
+          <span>Soft</span>
+          <input type="range" id="k-slider" min="1" max="5" step="1" value="3" oninput="updateK(this.value)">
+          <span>Stiff</span>
+          <span id="k-label" style="min-width:36px;font-size:11px;color:#555;">k = 3</span>
+        </div>
+      </div>
+
+      <div class="status-box" id="status-box">
+        Press <strong>Strike fork</strong> to begin.
+      </div>
+    </div>
+  </div>
+
+  <div class="note-box">
+    <strong>Pump relevance:</strong> When the DM Makeup Pump-3 housing bore wore out, the bearing lost its tight fit — support stiffness (k) dropped — natural frequency (fn) fell toward 24.67 Hz (1x running speed) — resonance occurred — vibration escalated rapidly without any new fault developing.
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('wave-canvas');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+let kLevel = 3;
+let animId = null;
+let t0 = null;
+let isRinging = false;
+
+const kFreqs = {1:6, 2:12, 3:20, 4:30, 5:42};
+
+function getFn() { return kFreqs[kLevel]; }
+
+function drawIdle() {
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle = 'rgba(128,128,128,0.15)';
+  ctx.lineWidth = 0.5;
+  ctx.beginPath(); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.stroke();
+  ctx.fillStyle = 'rgba(128,128,128,0.35)';
+  ctx.font = '13px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('strike the fork to begin', W/2, H/2 - 10);
+}
+
+function drawWave(elapsed) {
+  ctx.clearRect(0,0,W,H);
+  const fn = getFn();
+  const duration = 4000;
+  const progress = Math.min(elapsed / duration, 1);
+
+  ctx.strokeStyle = 'rgba(128,128,128,0.1)';
+  ctx.lineWidth = 0.5;
+  ctx.beginPath(); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.stroke();
+
+  ctx.strokeStyle = '#E24B4A';
+  ctx.lineWidth = 1.2;
+  ctx.setLineDash([5,5]);
+  ctx.beginPath();
+  for(let x=0;x<=W;x++) {
+    const p = x/W;
+    const d = Math.exp(-4.5*p);
+    if(x===0) ctx.moveTo(x, H/2 - d*(H*0.38));
+    else ctx.lineTo(x, H/2 - d*(H*0.38));
+  }
+  ctx.stroke();
+  ctx.beginPath();
+  for(let x=0;x<=W;x++) {
+    const p = x/W;
+    const d = Math.exp(-4.5*p);
+    if(x===0) ctx.moveTo(x, H/2 + d*(H*0.38));
+    else ctx.lineTo(x, H/2 + d*(H*0.38));
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.strokeStyle = '#378ADD';
+  ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  const xNow = progress * W;
+  for(let x=0;x<=xNow;x++) {
+    const p = x/W;
+    const d = Math.exp(-4.5*p);
+    const wave = Math.sin(2*Math.PI*fn*p*1.2) * d * (H*0.38);
+    const y = H/2 - wave;
+    if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+
+  const decay = Math.exp(-4.5 * progress);
+  document.getElementById('amp-val').textContent = Math.round(decay*100) + '%';
+
+  if(progress < 0.2) {
+    document.getElementById('status-box').innerHTML = 'Vibrating at its natural frequency — <strong>full energy</strong>.';
+  } else if(progress < 0.6) {
+    document.getElementById('status-box').innerHTML = 'Energy slowly dissipating — <strong>same frequency</strong>, smaller amplitude.';
+  } else if(progress < 0.95) {
+    document.getElementById('status-box').innerHTML = 'Almost stopped — frequency <strong>never changed</strong>, only amplitude faded.';
+  } else {
+    document.getElementById('status-box').innerHTML = 'Stopped. It vibrated at one fixed frequency the whole time — that is <strong>fn</strong>.';
+    document.getElementById('amp-val').textContent = '0%';
+  }
+
+  if(progress < 1) {
+    animId = requestAnimationFrame(ts => drawWave(ts - t0));
+  } else {
+    isRinging = false;
+  }
+}
+
+function strike() {
+  if(animId) cancelAnimationFrame(animId);
+  isRinging = true;
+  document.getElementById('fn-val').textContent = getFn() + ' Hz';
+
+  const fg = document.getElementById('fork-group');
+  const hm = document.getElementById('hammer');
+  const tag = document.getElementById('fn-tag');
+  const dl = document.getElementById('dot-l');
+  const dr = document.getElementById('dot-r');
+
+  fg.classList.remove('ringing'); hm.classList.remove('hitting');
+  void fg.offsetWidth;
+  fg.classList.add('ringing'); hm.classList.add('hitting');
+
+  tag.style.opacity = '1'; tag.style.transition = 'opacity 0.4s 0.3s';
+  dl.style.opacity = '1'; dl.style.transition = 'opacity 0.3s 0.2s';
+  dr.style.opacity = '1'; dr.style.transition = 'opacity 0.3s 0.25s';
+
+  document.getElementById('status-box').innerHTML = 'Struck! Vibrating at natural frequency <strong>fn = ' + getFn() + ' Hz</strong>.';
+  document.getElementById('amp-val').textContent = '100%';
+
+  animId = requestAnimationFrame(ts => { t0 = ts; drawWave(0); });
+}
+
+function resetFork() {
+  if(animId) cancelAnimationFrame(animId);
+  isRinging = false;
+  const fg = document.getElementById('fork-group');
+  const hm = document.getElementById('hammer');
+  fg.classList.remove('ringing'); hm.classList.remove('hitting');
+  document.getElementById('fn-tag').style.opacity = '0';
+  document.getElementById('dot-l').style.opacity = '0';
+  document.getElementById('dot-r').style.opacity = '0';
+  document.getElementById('fn-val').textContent = '—';
+  document.getElementById('amp-val').textContent = '—';
+  document.getElementById('status-box').innerHTML = 'Press <strong>Strike fork</strong> to begin.';
+  drawIdle();
+}
+
+function updateK(v) {
+  kLevel = parseInt(v);
+  document.getElementById('k-label').textContent = 'k = ' + v;
+  if(isRinging) document.getElementById('fn-val').textContent = getFn() + ' Hz';
+}
+
+drawIdle();
+</script>
+</body>
+</html>
