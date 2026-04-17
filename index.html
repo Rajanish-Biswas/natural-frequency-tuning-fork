@@ -3,527 +3,411 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Natural Frequency — Tuning Fork Visualizer</title>
+<title>Natural Frequency — DM Makeup Pump-3 Visualizer</title>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-    background: #f8f8f6;
-    color: #1a1a1a;
-    min-height: 100vh;
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    padding: 24px 16px;
-  }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  background: #f4f5f7;
+  color: #1a1a1a;
+  padding: 20px 16px 40px;
+}
 
-  .card {
-    background: #ffffff;
-    border: 1px solid rgba(0,0,0,0.1);
-    border-radius: 16px;
-    padding: 28px 28px 24px;
-    width: 100%;
-    max-width: 820px;
-    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
-  }
+.page { max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
 
-  h1 {
-    font-size: 17px;
-    font-weight: 600;
-    margin-bottom: 4px;
-  }
+h1 { font-size: 17px; font-weight: 700; margin-bottom: 2px; }
+.meta { font-size: 11px; color: #888; margin-bottom: 0; }
 
-  .subtitle {
-    font-size: 13px;
-    color: #666;
-    margin-bottom: 20px;
-    line-height: 1.5;
-  }
+/* ── Cards ── */
+.card {
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: 14px;
+  padding: 20px 22px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+}
+.card-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #555;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-title .pill {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  letter-spacing: .03em;
+}
+.pill-warn  { background: #FFF3CD; color: #856404; }
+.pill-ok    { background: #D1FAE5; color: #065F46; }
+.pill-alert { background: #FFE4E4; color: #9B1C1C; }
 
-  .layout {
-    display: flex;
-    gap: 28px;
-    align-items: flex-start;
-    flex-wrap: wrap;
-  }
+/* ── Layout ── */
+.layout { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+.fork-col { flex: 0 0 190px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.wave-col { flex: 1; min-width: 280px; }
 
-  .fork-col {
-    flex: 0 0 200px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-  }
+/* ── Canvas ── */
+#wave-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  background: #fafafa;
+}
 
-  .wave-col { flex: 1; min-width: 280px; }
+.legend {
+  display: flex; gap: 14px; flex-wrap: wrap;
+  margin-top: 6px; font-size: 11px; color: #777;
+}
+.legend span { display: flex; align-items: center; gap: 5px; }
+.leg-line { width: 20px; height: 2px; border-radius: 1px; }
+.leg-dash { width: 20px; border-top: 2px dashed #E24B4A; }
+.leg-ref  { width: 20px; border-top: 2px dashed #EF9F27; }
 
-  /* ── Canvas: NO CSS height override; let the HTML attributes control size ── */
-  #wave-canvas {
-    display: block;
-    width: 100%;
-    height: auto;
-    border: 1px solid #ddd;
-    border-radius: 10px;
-    background: #f9f9f7;
-  }
+/* ── Buttons ── */
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+button {
+  padding: 7px 16px;
+  border: 1px solid rgba(0,0,0,0.15);
+  border-radius: 8px;
+  background: transparent;
+  color: #333;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background .12s;
+}
+button:hover { background: rgba(0,0,0,0.05); }
+button.primary { background: #1F3864; color: #fff; border-color: #1F3864; }
+button.primary:hover { background: #2e4f8a; }
+button.active-btn { background: #EF9F27; color: #fff; border-color: #EF9F27; }
 
-  .btn-row {
-    display: flex;
-    gap: 8px;
-  }
+/* ── Metrics row ── */
+.metrics { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-top: 12px; }
+.metric { background: #f5f5f3; border-radius: 8px; padding: 9px 11px; }
+.metric-label { font-size: 9px; color: #999; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 2px; }
+.metric-value { font-size: 18px; font-weight: 700; letter-spacing: -.02em; }
 
-  button {
-    padding: 8px 20px;
-    border: 1px solid rgba(0,0,0,0.18);
-    border-radius: 8px;
-    background: transparent;
-    color: #333;
-    font-size: 13px;
-    font-family: inherit;
-    cursor: pointer;
-    transition: background .15s;
-  }
-  button:hover { background: rgba(0,0,0,0.05); }
-  button.primary { background: #1F3864; color: #fff; border-color: #1F3864; }
-  button.primary:hover { background: #2e4f8a; }
+/* ── Sliders ── */
+.slider-row { margin-top: 12px; }
+.slider-row label { font-size: 11px; color: #666; display: block; margin-bottom: 5px; }
+.slider-track { display: flex; align-items: center; gap: 8px; }
+.slider-track span { font-size: 11px; color: #aaa; min-width: 32px; }
+input[type=range] {
+  flex: 1; height: 4px; -webkit-appearance: none; appearance: none;
+  background: rgba(0,0,0,0.12); border-radius: 2px; outline: none; cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 17px; height: 17px; border-radius: 50%;
+  background: #1F3864; cursor: pointer; border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.15);
+}
 
-  .metrics {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 8px;
-    margin-top: 12px;
-  }
+/* ── Status box ── */
+.status-box {
+  margin-top: 12px; font-size: 12px; color: #444;
+  min-height: 38px; line-height: 1.6; padding: 8px 12px;
+  background: rgba(31,56,100,0.05); border-radius: 8px;
+  border-left: 3px solid #1F3864;
+}
 
-  .metric {
-    background: #f4f4f2;
-    border-radius: 8px;
-    padding: 10px 12px;
-  }
+/* ── Vibration data table ── */
+.vib-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.vib-table th {
+  background: #f0f2f5; font-weight: 600; font-size: 10px;
+  text-transform: uppercase; letter-spacing: .05em; color: #666;
+  padding: 7px 10px; text-align: center; border-bottom: 1px solid #e0e0e0;
+}
+.vib-table td {
+  padding: 8px 10px; text-align: center; border-bottom: 1px solid #f0f0f0;
+  font-size: 12px;
+}
+.vib-table tr:last-child td { border-bottom: none; }
+.vib-table tr.highlight td { background: #FFFBEB; }
+.vib-table tr.critical  td { background: #FFF1F1; }
 
-  .metric-label {
-    font-size: 10px;
-    color: #888;
-    margin-bottom: 2px;
-    text-transform: uppercase;
-    letter-spacing: .04em;
-  }
+.bar-cell { min-width: 80px; }
+.bar-wrap { background: #eee; border-radius: 3px; height: 8px; overflow: hidden; }
+.bar-fill  { height: 100%; border-radius: 3px; transition: width .3s; }
 
-  .metric-value {
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-  }
+.freq-badge {
+  display: inline-block; font-size: 10px; font-weight: 600;
+  padding: 2px 7px; border-radius: 10px;
+}
+.freq-1x { background: #FFE4E4; color: #9B1C1C; }
+.freq-2x { background: #FFF3CD; color: #856404; }
+.freq-ok { background: #E8F4FD; color: #1a4a7a; }
 
-  .slider-row { margin-top: 12px; }
+/* ── Resonance gauge ── */
+.gauge-wrap { display: flex; align-items: center; gap: 14px; margin-top: 4px; }
+.gauge-bar {
+  flex: 1; height: 18px; border-radius: 9px; overflow: hidden;
+  background: linear-gradient(to right, #4CAF50 0%, #FFC107 50%, #F44336 100%);
+  position: relative;
+}
+.gauge-needle {
+  position: absolute; top: 0; width: 3px; height: 100%;
+  background: #1F3864; border-radius: 2px;
+  transition: left .4s ease;
+}
+.gauge-label { font-size: 12px; font-weight: 700; min-width: 80px; }
 
-  .slider-row label {
-    font-size: 11px;
-    color: #666;
-    display: block;
-    margin-bottom: 5px;
-  }
+/* ── ISO bands ── */
+.iso-row { display: flex; gap: 4px; margin-top: 8px; border-radius: 8px; overflow: hidden; }
+.iso-band {
+  flex: 1; text-align: center; padding: 6px 4px; font-size: 10px; font-weight: 600;
+}
 
-  .slider-track {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .slider-track span { font-size: 11px; color: #aaa; min-width: 32px; }
-
-  input[type=range] {
-    flex: 1;
-    height: 4px;
-    -webkit-appearance: none;
-    appearance: none;
-    background: rgba(0,0,0,0.12);
-    border-radius: 2px;
-    outline: none;
-    cursor: pointer;
-  }
-
-  input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 18px; height: 18px;
-    border-radius: 50%;
-    background: #1F3864;
-    cursor: pointer;
-    border: 2px solid #fff;
-    box-shadow: 0 0 0 1px rgba(0,0,0,0.15);
-  }
-
-  .status-box {
-    margin-top: 12px;
-    font-size: 12px;
-    color: #555;
-    min-height: 38px;
-    line-height: 1.6;
-    padding: 8px 12px;
-    background: rgba(55,138,221,0.06);
-    border-radius: 8px;
-    border-left: 3px solid #378ADD;
-  }
-
-  .legend {
-    display: flex;
-    gap: 16px;
-    margin-top: 6px;
-    font-size: 11px;
-    color: #888;
-    flex-wrap: wrap;
-  }
-
-  .legend span { display: flex; align-items: center; gap: 5px; }
-  .leg-line { width: 22px; height: 2px; border-radius: 1px; }
-  .leg-dash { width: 22px; border-top: 2px dashed #E24B4A; }
-
-  .note-box {
-    margin-top: 20px;
-    padding: 12px 14px;
-    background: rgba(55,138,221,0.08);
-    border-left: 3px solid #378ADD;
-    border-radius: 0 8px 8px 0;
-    font-size: 12px;
-    color: #1a4a7a;
-    line-height: 1.6;
-  }
-
-  .formula {
-    font-size: 15px;
-    text-align: center;
-    color: #333;
-    font-weight: 500;
-    margin-top: 4px;
-  }
-
-  @keyframes strike {
-    0%   { transform: rotate(0deg); }
-    15%  { transform: rotate(-18deg); }
-    35%  { transform: rotate(4deg); }
-    55%  { transform: rotate(0deg); }
-    100% { transform: rotate(0deg); }
-  }
-  @keyframes hammer-hit {
-    0%,60%,100% { transform: translate(0,0) rotate(-30deg); }
-    25%          { transform: translate(18px,10px) rotate(-30deg); }
-  }
-
-  .fork-group { transform-origin: 300px 240px; }
-  .fork-group.ringing { animation: strike 0.45s ease-out forwards; }
-  .hammer { transform-origin: 240px 195px; transform: rotate(-30deg); }
-  .hammer.hitting { animation: hammer-hit 0.38s ease-in-out forwards; }
+/* ── Fork animation ── */
+.formula { font-size: 14px; text-align: center; color: #333; font-weight: 500; }
+@keyframes strike {
+  0%   { transform: rotate(0deg); }
+  15%  { transform: rotate(-18deg); }
+  35%  { transform: rotate(4deg); }
+  55%  { transform: rotate(0deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes hammer-hit {
+  0%,60%,100% { transform: translate(0,0) rotate(-30deg); }
+  25%          { transform: translate(18px,10px) rotate(-30deg); }
+}
+.fork-group { transform-origin: 300px 240px; }
+.fork-group.ringing { animation: strike 0.45s ease-out forwards; }
+.hammer { transform-origin: 240px 195px; transform: rotate(-30deg); }
+.hammer.hitting { animation: hammer-hit 0.38s ease-in-out forwards; }
 </style>
 </head>
 <body>
+<div class="page">
 
-<div class="card">
-  <h1>Natural Frequency — Interactive Visualizer</h1>
-  <p class="subtitle">Every structure vibrates at its own fixed natural frequency when disturbed. Strike the fork — the frequency never changes, only the amplitude decays as energy dissipates.</p>
+  <!-- ── Header ── -->
+  <div>
+    <h1>Natural Frequency — DM Makeup Pump-3 Visualizer</h1>
+    <p class="meta">Unit C · BIFPCL/RAMPAL · Vibration data: 16 Apr 2026, 04:25 PM · Running speed: 1475 RPM = 24.58 Hz</p>
+  </div>
 
-  <div class="layout">
-
-    <!-- Fork column -->
-    <div class="fork-col">
-      <svg width="200" height="280" viewBox="160 80 220 260">
-        <g class="fork-group" id="fork-group">
-          <path d="M 294 200 Q 280 160 286 120" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>
-          <path d="M 306 200 Q 320 160 314 120" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>
-          <rect x="294" y="198" width="12" height="70" rx="4" fill="currentColor"/>
-          <rect x="284" y="264" width="32" height="10" rx="3" fill="currentColor"/>
-        </g>
-        <g class="hammer" id="hammer">
-          <rect x="198" y="178" width="40" height="16" rx="5" fill="#378ADD" opacity="0.85"/>
-          <rect x="230" y="165" width="6"  height="30" rx="2" fill="#378ADD" opacity="0.7"/>
-        </g>
-        <text id="fn-tag" x="300" y="108" text-anchor="middle" font-size="11"
-          fill="#378ADD" font-family="inherit" opacity="0">fn</text>
-        <circle id="dot-l" cx="278" cy="130" r="4" fill="#EF9F27" opacity="0"/>
-        <circle id="dot-r" cx="322" cy="126" r="4" fill="#EF9F27" opacity="0"/>
-      </svg>
-
-      <div class="btn-row">
-        <button class="primary" id="btn-strike">▶ Strike fork</button>
-        <button id="btn-reset">Reset</button>
+  <!-- ── Resonance Proximity Card ── -->
+  <div class="card">
+    <div class="card-title">
+      Resonance Proximity — fn vs 1× Running Speed (24.58 Hz)
+      <span class="pill pill-warn" id="reson-pill">MONITORING</span>
+    </div>
+    <div class="gauge-wrap">
+      <span style="font-size:11px;color:#888;min-width:50px;">Safe</span>
+      <div class="gauge-bar">
+        <div class="gauge-needle" id="gauge-needle" style="left:50%;"></div>
       </div>
+      <span style="font-size:11px;color:#888;min-width:60px;text-align:right;">Resonance</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;color:#aaa;margin-top:4px;padding:0 2px;">
+      <span>fn ≫ 1×</span><span>fn ≈ 1× ← DANGER</span>
+    </div>
+    <p style="margin-top:10px;font-size:12px;color:#555;line-height:1.6;">
+      <strong>PDE Vertical dominant frequency ≈ 26.1 Hz</strong> — only <strong>1.5 Hz above 1× running speed (24.58 Hz)</strong>.
+      If bearing bore wears further, stiffness (k) drops → fn falls → enters resonance → vibration spikes rapidly.
+      Current velocity 2.2 mm/s (Zone A) but <strong>Spike Energy 6.2 signals early bearing distress</strong>.
+    </p>
 
-      <div class="formula">f<sub>n</sub> = <sup>1</sup>/<sub>2π</sub> √(k/m)</div>
+    <!-- ISO 10816-3 bands -->
+    <div style="margin-top:14px;">
+      <div style="font-size:10px;color:#888;margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">ISO 10816-3 Severity (45 kW pump) — max reading: 2.2 mm/s</div>
+      <div class="iso-row">
+        <div class="iso-band" style="background:#D1FAE5;color:#065F46;">A<br><span style="font-weight:400;">0–2.3</span></div>
+        <div class="iso-band" style="background:#FEF9C3;color:#854D0E;">B<br><span style="font-weight:400;">2.3–4.5</span></div>
+        <div class="iso-band" style="background:#FED7AA;color:#9A3412;">C<br><span style="font-weight:400;">4.5–7.1</span></div>
+        <div class="iso-band" style="background:#FECACA;color:#7F1D1D;">D<br><span style="font-weight:400;">&gt;7.1</span></div>
+      </div>
+      <div style="margin-top:4px;font-size:11px;color:#065F46;font-weight:600;">✅ All readings in Zone A — velocity within limits. Watch Spike Energy trend.</div>
+    </div>
+  </div>
+
+  <!-- ── Vibration Data Table ── -->
+  <div class="card">
+    <div class="card-title">
+      Measured Vibration Data
+      <span class="pill pill-ok">16 APR 2026</span>
+    </div>
+    <div style="overflow-x:auto;">
+    <table class="vib-table">
+      <thead>
+        <tr>
+          <th>Point</th>
+          <th>H Vel<br>(mm/s)</th>
+          <th>H Disp<br>(µm pk-pk)</th>
+          <th>V Vel<br>(mm/s)</th>
+          <th>V Disp<br>(µm pk-pk)</th>
+          <th>A Vel<br>(mm/s)</th>
+          <th>A Disp<br>(µm pk-pk)</th>
+          <th>Dominant<br>Freq (Hz)</th>
+          <th>Spike<br>Energy</th>
+          <th>Severity</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>MNDE</strong><br><span style="font-size:10px;color:#aaa;">Motor NDE</span></td>
+          <td>0.7</td><td>9</td><td>0.4</td><td>3</td><td>1.0</td><td>9</td>
+          <td><span class="freq-badge freq-ok">~35 Hz</span></td>
+          <td>—</td>
+          <td style="color:#065F46;font-weight:600;">Zone A</td>
+        </tr>
+        <tr>
+          <td><strong>MDE</strong><br><span style="font-size:10px;color:#aaa;">Motor DE</span></td>
+          <td>0.7</td><td>7</td><td>0.4</td><td>2</td><td>0.7</td><td>7</td>
+          <td><span class="freq-badge freq-2x">~45 Hz (≈2×)</span></td>
+          <td>3.4 / 2.7</td>
+          <td style="color:#065F46;font-weight:600;">Zone A</td>
+        </tr>
+        <tr class="highlight">
+          <td><strong>PNDE</strong><br><span style="font-size:10px;color:#aaa;">Pump NDE</span></td>
+          <td>1.3</td><td>17</td><td>1.6</td><td>22</td><td>—</td><td>—</td>
+          <td><span class="freq-badge freq-ok">~33 Hz</span></td>
+          <td>—</td>
+          <td style="color:#065F46;font-weight:600;">Zone A</td>
+        </tr>
+        <tr class="critical">
+          <td><strong>PDE ⚠</strong><br><span style="font-size:10px;color:#aaa;">Pump DE</span></td>
+          <td>1.1</td><td>11</td>
+          <td><strong>2.2</strong></td><td><strong>38</strong></td>
+          <td>1.3</td><td>20</td>
+          <td><span class="freq-badge freq-1x">26.1 Hz ≈ 1×</span></td>
+          <td><strong style="color:#9B1C1C;">6.2 / 4.6 / 4.2</strong></td>
+          <td style="color:#065F46;font-weight:600;">Zone A ⚠</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+    <p style="margin-top:10px;font-size:11px;color:#888;line-height:1.6;">
+      Dominant frequency = v_rms × √2 / (π × D_pk-pk). PDE Vertical at 26.1 Hz is only 1.5 Hz above 1× running speed.
+      Axial reading at MNDE (1.0 mm/s → ~50 Hz ≈ 2×) suggests possible misalignment or looseness component.
+    </p>
+  </div>
+
+  <!-- ── Interactive Visualizer ── -->
+  <div class="card">
+    <div class="card-title">
+      Interactive Natural Frequency Visualizer
+      <span class="pill pill-ok">REAL PUMP DATA</span>
     </div>
 
-    <!-- Wave column -->
-    <div class="wave-col">
-      <p style="font-size:11px;color:#888;margin-bottom:6px;">Vibration amplitude over time →</p>
+    <div class="layout">
+      <!-- Fork -->
+      <div class="fork-col">
+        <svg width="190" height="270" viewBox="160 80 220 260">
+          <g class="fork-group" id="fork-group">
+            <path d="M 294 200 Q 280 160 286 120" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>
+            <path d="M 306 200 Q 320 160 314 120" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>
+            <rect x="294" y="198" width="12" height="70" rx="4" fill="currentColor"/>
+            <rect x="284" y="264" width="32" height="10" rx="3" fill="currentColor"/>
+          </g>
+          <g class="hammer" id="hammer">
+            <rect x="198" y="178" width="40" height="16" rx="5" fill="#378ADD" opacity="0.85"/>
+            <rect x="230" y="165" width="6"  height="30" rx="2" fill="#378ADD" opacity="0.7"/>
+          </g>
+          <text id="fn-tag" x="300" y="108" text-anchor="middle" font-size="11"
+            fill="#378ADD" font-family="inherit" opacity="0">fn</text>
+          <circle id="dot-l" cx="278" cy="130" r="4" fill="#EF9F27" opacity="0"/>
+          <circle id="dot-r" cx="322" cy="126" r="4" fill="#EF9F27" opacity="0"/>
+        </svg>
 
-      <!-- Canvas: width & height attributes define the drawing resolution -->
-      <canvas id="wave-canvas" width="500" height="200"></canvas>
+        <div class="btn-row">
+          <button class="primary" id="btn-strike">▶ Strike</button>
+          <button id="btn-reset">Reset</button>
+        </div>
 
-      <div class="legend">
-        <span><span class="leg-line" style="background:#378ADD;height:2.5px;"></span> vibration wave</span>
-        <span><span class="leg-dash"></span> decay envelope</span>
-        <span><span class="leg-line" style="background:#1F3864;width:2px;height:14px;"></span> current time</span>
+        <!-- Mode selector -->
+        <div style="display:flex;flex-direction:column;gap:5px;width:100%;margin-top:4px;">
+          <div style="font-size:10px;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Load condition</div>
+          <button id="btn-healthy" class="active-btn" style="font-size:11px;padding:5px 10px;">✅ Healthy (current)</button>
+          <button id="btn-worn"    style="font-size:11px;padding:5px 10px;">⚠️ Worn bore (simulated)</button>
+          <button id="btn-reson"   style="font-size:11px;padding:5px 10px;">🔴 Resonance (danger)</button>
+        </div>
+
+        <div class="formula">f<sub>n</sub> = <sup>1</sup>/<sub>2π</sub> √(k/m)</div>
       </div>
 
-      <div class="metrics">
-        <div class="metric">
-          <div class="metric-label">Natural Frequency</div>
-          <div class="metric-value" id="fn-val" style="color:#378ADD;">—</div>
-        </div>
-        <div class="metric">
-          <div class="metric-label">Peak Amplitude</div>
-          <div class="metric-value" id="peak-val" style="color:#9B59B6;">—</div>
-        </div>
-        <div class="metric">
-          <div class="metric-label">Current Amplitude</div>
-          <div class="metric-value" id="amp-val" style="color:#EF9F27;">—</div>
-        </div>
-      </div>
+      <!-- Wave canvas -->
+      <div class="wave-col">
+        <p style="font-size:11px;color:#888;margin-bottom:6px;">Vibration amplitude over time → (X-axis = time, Y-axis = displacement)</p>
+        <canvas id="wave-canvas" width="500" height="210"></canvas>
 
-      <div class="slider-row">
-        <label>Stiffness (k) — higher stiffness raises natural frequency (fn)</label>
-        <div class="slider-track">
-          <span>Soft</span>
-          <input type="range" id="k-slider" min="1" max="5" step="1" value="3">
-          <span>Stiff</span>
-          <span id="k-label" style="font-size:11px;color:#444;min-width:36px;">k = 3</span>
+        <div class="legend">
+          <span><span class="leg-line" style="background:#378ADD;height:2.5px;"></span>vibration wave</span>
+          <span><span class="leg-dash"></span>decay envelope</span>
+          <span><span class="leg-ref"></span>1× running speed ref</span>
+          <span><span class="leg-line" style="background:#1F3864;width:2px;height:14px;"></span>current time</span>
         </div>
-      </div>
 
-      <div class="slider-row">
-        <label>Impact Force (F) — controls initial amplitude only (frequency is unchanged)</label>
-        <div class="slider-track">
-          <span>Light</span>
-          <input type="range" id="f-slider" min="1" max="5" step="1" value="3">
-          <span>Hard</span>
-          <span id="f-label" style="font-size:11px;color:#444;min-width:36px;">F = 3</span>
+        <div class="metrics">
+          <div class="metric">
+            <div class="metric-label">Natural Freq</div>
+            <div class="metric-value" id="fn-val" style="color:#378ADD;">—</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">1× Run Speed</div>
+            <div class="metric-value" style="color:#EF9F27;">24.58 Hz</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Peak Amp</div>
+            <div class="metric-value" id="peak-val" style="color:#9B59B6;">—</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Current Amp</div>
+            <div class="metric-value" id="amp-val" style="color:#E24B4A;">—</div>
+          </div>
         </div>
-      </div>
 
-      <div class="status-box" id="status-box">
-        Press <strong>Strike fork</strong> to begin.
+        <div class="slider-row">
+          <label>Stiffness (k) — bore wear reduces k → fn drops toward 24.58 Hz → resonance</label>
+          <div class="slider-track">
+            <span>Worn</span>
+            <input type="range" id="k-slider" min="1" max="5" step="1" value="3">
+            <span>Healthy</span>
+            <span id="k-label" style="font-size:11px;color:#444;min-width:36px;">k = 3</span>
+          </div>
+        </div>
+
+        <div class="slider-row">
+          <label>Impact Force (F) — larger force = higher initial amplitude (fn unchanged)</label>
+          <div class="slider-track">
+            <span>Light</span>
+            <input type="range" id="f-slider" min="1" max="5" step="1" value="3">
+            <span>Hard</span>
+            <span id="f-label" style="font-size:11px;color:#444;min-width:36px;">F = 3</span>
+          </div>
+        </div>
+
+        <div class="status-box" id="status-box">
+          Press <strong>Strike</strong> to simulate vibration. Try different conditions using the buttons above.
+        </div>
       </div>
     </div>
   </div>
 
-  <div class="note-box">
-    <strong>Pump relevance:</strong> When the DM Makeup Pump-3 housing bore wore out, the bearing lost its tight fit — support stiffness (k) dropped — natural frequency (fn) fell toward 24.67 Hz (1× running speed) — resonance occurred — vibration escalated rapidly without any new fault developing.
-  </div>
-</div>
+</div><!-- end .page -->
 
 <script>
-// ── State ──────────────────────────────────────────────────────────────────
-var canvas   = document.getElementById('wave-canvas');
-var ctx      = canvas.getContext('2d');
-var W        = canvas.width;   // 500
-var H        = canvas.height;  // 200
+// ── Real pump data ───────────────────────────────────────────────────────
+var RUNNING_HZ = 24.58;   // 1475 RPM / 60
+// Natural frequencies calibrated to real data (Hz):
+// Healthy (current): PDE-V dominant ~26.1 Hz → fn just above 1×
+// Worn bore: fn drops toward 1× (simulate ~25.1 Hz)
+// Resonance: fn == 1× (24.58 Hz)
+var MODES = {
+  healthy: { fn: 26.1, amp: 0.55, label: 'Healthy (current state)', kVal: 3, fVal: 3 },
+  worn:    { fn: 25.1, amp: 0.75, label: 'Worn bore — fn dropping toward 1×', kVal: 2, fVal: 4 },
+  reson:   { fn: 24.6, amp: 1.00, label: 'RESONANCE — fn ≈ 1× running speed!', kVal: 1, fVal: 5 }
+};
 
-var kLevel    = 3;
-var fLevel    = 3;
-var timerId   = null;
-var startMs   = null;
-var ringing   = false;
-var DURATION  = 5000; // ms for full decay animation
-
-var kFreqs  = { 1:5,  2:10, 3:18, 4:28, 5:40 };  // Hz per stiffness level
-var fAmps   = { 1:0.18, 2:0.38, 3:0.60, 4:0.80, 5:1.00 };
-var fLabels = { 1:'Very Light', 2:'Light', 3:'Moderate', 4:'Hard', 5:'Full Strike' };
-
-function fn()    { return kFreqs[kLevel]; }
-function force() { return fAmps[fLevel]; }
-
-// ── Drawing ────────────────────────────────────────────────────────────────
-
-function drawIdle() {
-  ctx.clearRect(0, 0, W, H);
-
-  // centre line
-  ctx.strokeStyle = 'rgba(0,0,0,0.1)';
-  ctx.lineWidth = 1;
-  ctx.setLineDash([]);
-  ctx.beginPath();
-  ctx.moveTo(0, H/2); ctx.lineTo(W, H/2);
-  ctx.stroke();
-
-  // prompt text
-  ctx.fillStyle = 'rgba(0,0,0,0.25)';
-  ctx.font = '14px -apple-system, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('Strike the fork to see the vibration wave', W/2, H/2 - 12);
-  ctx.font = '11px -apple-system, sans-serif';
-  ctx.fillStyle = 'rgba(0,0,0,0.15)';
-  ctx.fillText('← high amplitude          low amplitude →', W/2, H/2 + 20);
-}
-
-function drawFrame(elapsed) {
-  ctx.clearRect(0, 0, W, H);
-
-  var freq    = fn();
-  var A0      = force() * H * 0.42;          // peak amplitude in px
-  var prog    = Math.min(elapsed / DURATION, 1);
-  var xCursor = Math.round(prog * (W - 1));
-
-  // ── 1. Centre line ──
-  ctx.strokeStyle = 'rgba(0,0,0,0.1)';
-  ctx.lineWidth = 1;
-  ctx.setLineDash([]);
-  ctx.beginPath();
-  ctx.moveTo(0, H/2); ctx.lineTo(W, H/2);
-  ctx.stroke();
-
-  // ── 2. Decay envelope (red dashed) ──
-  ctx.strokeStyle = '#E24B4A';
-  ctx.lineWidth = 1.5;
-  ctx.setLineDash([6, 5]);
-
-  ctx.beginPath();
-  for (var x = 0; x < W; x++) {
-    var env = A0 * Math.exp(-4.5 * x / W);
-    if (x === 0) ctx.moveTo(x, H/2 - env);
-    else          ctx.lineTo(x, H/2 - env);
-  }
-  ctx.stroke();
-
-  ctx.beginPath();
-  for (var x = 0; x < W; x++) {
-    var env = A0 * Math.exp(-4.5 * x / W);
-    if (x === 0) ctx.moveTo(x, H/2 + env);
-    else          ctx.lineTo(x, H/2 + env);
-  }
-  ctx.stroke();
-
-  ctx.setLineDash([]);
-
-  // ── 3. Vibration wave (blue) — full width, always fully drawn ──
-  ctx.strokeStyle = '#378ADD';
-  ctx.lineWidth = 2.5;
-  ctx.beginPath();
-  for (var x = 0; x < W; x++) {
-    var t    = x / W;                              // 0→1 represents time
-    var env  = A0 * Math.exp(-4.5 * t);           // exponential decay
-    var y    = H/2 - Math.sin(2 * Math.PI * freq * t * 1.2) * env;
-    if (x === 0) ctx.moveTo(x, y);
-    else          ctx.lineTo(x, y);
-  }
-  ctx.stroke();
-
-  // ── 4. Cursor: moving vertical line showing current playback time ──
-  if (xCursor >= 0 && xCursor < W) {
-    ctx.strokeStyle = 'rgba(31,56,100,0.55)';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([4, 3]);
-    ctx.beginPath();
-    ctx.moveTo(xCursor, 2); ctx.lineTo(xCursor, H - 2);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // dot on the wave at cursor position
-    var t_cur  = xCursor / W;
-    var env_cur = A0 * Math.exp(-4.5 * t_cur);
-    var y_cur  = H/2 - Math.sin(2 * Math.PI * freq * t_cur * 1.2) * env_cur;
-    ctx.fillStyle = '#1F3864';
-    ctx.beginPath();
-    ctx.arc(xCursor, y_cur, 4, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // ── 5. Metrics ──
-  var decayNow = Math.exp(-4.5 * prog);
-  var peakPct  = Math.round(force() * 100);
-  var currPct  = Math.round(decayNow * peakPct);
-  document.getElementById('amp-val').textContent = currPct + '%';
-
-  // ── 6. Status ──
-  var sb = document.getElementById('status-box');
-  if (prog < 0.02) {
-    sb.innerHTML = 'Struck with <strong>' + fLabels[fLevel] + '</strong> force — initial amplitude: <strong>' + peakPct + '%</strong>. fn = <strong>' + freq + ' Hz</strong>.';
-  } else if (prog < 0.5) {
-    sb.innerHTML = 'Energy dissipating — amplitude shrinking from ' + peakPct + '% → ' + currPct + '%, but <strong>frequency stays fixed at ' + freq + ' Hz</strong>.';
-  } else if (prog < 0.95) {
-    sb.innerHTML = 'Almost stopped — notice the <strong>frequency never changed</strong>, only amplitude faded with energy loss.';
-  } else {
-    sb.innerHTML = 'Stopped. A harder strike only raised the initial amplitude — <strong>fn = ' + freq + ' Hz</strong> remained constant throughout.';
-    document.getElementById('amp-val').textContent = '0%';
-  }
-
-  // ── 7. Schedule next frame ──
-  if (prog < 1) {
-    timerId = setTimeout(function() {
-      drawFrame(Date.now() - startMs);
-    }, 30);
-  } else {
-    ringing = false;
-  }
-}
-
-// ── Strike ─────────────────────────────────────────────────────────────────
-function strike() {
-  if (timerId) clearTimeout(timerId);
-
-  ringing = true;
-
-  // update frequency metric
-  document.getElementById('fn-val').textContent  = fn() + ' Hz';
-  document.getElementById('peak-val').textContent = Math.round(force() * 100) + '%';
-  document.getElementById('amp-val').textContent  = Math.round(force() * 100) + '%';
-
-  // fork & hammer animation
-  var fg = document.getElementById('fork-group');
-  var hm = document.getElementById('hammer');
-  fg.classList.remove('ringing'); hm.classList.remove('hitting');
-  void fg.offsetWidth; // force reflow to restart CSS animation
-  fg.classList.add('ringing'); hm.classList.add('hitting');
-
-  // show fn label & dots on fork
-  var tag = document.getElementById('fn-tag');
-  var dl  = document.getElementById('dot-l');
-  var dr  = document.getElementById('dot-r');
-  tag.style.transition = 'opacity 0.4s 0.3s'; tag.style.opacity = '1';
-  dl.style.transition  = 'opacity 0.3s 0.2s'; dl.style.opacity  = '1';
-  dr.style.transition  = 'opacity 0.3s 0.25s'; dr.style.opacity = '1';
-
-  // draw the wave immediately and start cursor animation
-  startMs = Date.now();
-  drawFrame(0);
-}
-
-// ── Reset ──────────────────────────────────────────────────────────────────
-function resetFork() {
-  if (timerId) clearTimeout(timerId);
-  ringing = false;
-
-  var fg = document.getElementById('fork-group');
-  var hm = document.getElementById('hammer');
-  fg.classList.remove('ringing'); hm.classList.remove('hitting');
-  document.getElementById('fn-tag').style.opacity = '0';
-  document.getElementById('dot-l').style.opacity  = '0';
-  document.getElementById('dot-r').style.opacity  = '0';
-  document.getElementById('fn-val').textContent   = '—';
-  document.getElementById('peak-val').textContent = '—';
-  document.getElementById('amp-val').textContent  = '—';
-  document.getElementById('status-box').innerHTML = 'Press <strong>Strike fork</strong> to begin.';
-  drawIdle();
-}
-
-// ── Slider callbacks ───────────────────────────────────────────────────────
-function updateK(v) {
-  kLevel = parseInt(v);
-  document.getElementById('k-label').textContent = 'k = ' + v;
-  if (ringing) document.getElementById('fn-val').textContent = fn() + ' Hz';
-}
-
-function updateF(v) {
-  fLevel = parseInt(v);
-  document.getElementById('f-label').textContent = 'F = ' + v;
-  if (ringing) document.getElementById('peak-val').textContent = Math.round(force() * 100) + '%';
-}
-
-// ── Wire up events (no DOMContentLoaded needed — script is at bottom of body) ──
-document.getElementById('btn-strike').addEventListener('click', strike);
-document.getElementById('btn-reset').addEventListener('click',  resetFork);
-document.getElementById('k-slider').addEventListener('input',   function() { updateK(this.value); });
-document.getElementById('f-slider').addEventListener('input',   function() { updateF(this.value); });
-
-// Initial idle draw
-drawIdle();
-</script>
-</body>
-</html>
+// k levels → approximate fn (calibrated to this pump)
+var kFreqs = { 1: 24.6, 2: 25.1, 3: 26.1, 4: 30.0, 5: 38.0 };
+var fAmps  = { 1: 0.18, 2: 0.
