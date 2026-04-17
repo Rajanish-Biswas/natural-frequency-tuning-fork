@@ -302,13 +302,17 @@
         <span><span class="dot" style="background:#E24B4A;border-top:2px dashed #E24B4A;height:0;"></span>decay envelope</span>
       </div>
 
-      <div class="metrics">
+      <div class="metrics" style="grid-template-columns:1fr 1fr 1fr;">
         <div class="metric">
           <div class="metric-label">Natural frequency</div>
           <div class="metric-value" id="fn-val" style="color:#378ADD;">—</div>
         </div>
         <div class="metric">
-          <div class="metric-label">Amplitude</div>
+          <div class="metric-label">Peak amplitude</div>
+          <div class="metric-value" id="peak-val" style="color:#9B59B6;">—</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Current amplitude</div>
           <div class="metric-value" id="amp-val" style="color:#EF9F27;">—</div>
         </div>
       </div>
@@ -320,6 +324,16 @@
           <input type="range" id="k-slider" min="1" max="5" step="1" value="3" oninput="updateK(this.value)">
           <span>Stiff</span>
           <span id="k-label" style="min-width:36px;font-size:11px;color:#555;">k = 3</span>
+        </div>
+      </div>
+
+      <div class="slider-row">
+        <label>Impact Force (F) — higher force sets a larger initial amplitude (frequency stays the same)</label>
+        <div class="slider-track">
+          <span>Light</span>
+          <input type="range" id="f-slider" min="1" max="5" step="1" value="3" oninput="updateF(this.value)">
+          <span>Hard</span>
+          <span id="f-label" style="min-width:36px;font-size:11px;color:#555;">F = 3</span>
         </div>
       </div>
 
@@ -340,13 +354,17 @@ const ctx = canvas.getContext('2d');
 const W = canvas.width, H = canvas.height;
 
 let kLevel = 3;
+let forceLevel = 3;
 let animId = null;
 let t0 = null;
 let isRinging = false;
 
-const kFreqs = {1:6, 2:12, 3:20, 4:30, 5:42};
+const kFreqs  = {1:6, 2:12, 3:20, 4:30, 5:42};
+const forceAmp = {1:0.20, 2:0.40, 3:0.60, 4:0.80, 5:1.00};
+const forceLabels = {1:'Very Light', 2:'Light', 3:'Moderate', 4:'Hard', 5:'Full Strike'};
 
-function getFn() { return kFreqs[kLevel]; }
+function getFn()   { return kFreqs[kLevel]; }
+function getForce(){ return forceAmp[forceLevel]; }
 
 function drawIdle() {
   ctx.clearRect(0,0,W,H);
@@ -362,13 +380,16 @@ function drawIdle() {
 function drawWave(elapsed) {
   ctx.clearRect(0,0,W,H);
   const fn = getFn();
+  const A0 = getForce() * (H * 0.38);   // initial amplitude scaled by force
   const duration = 4000;
   const progress = Math.min(elapsed / duration, 1);
 
+  // centre line
   ctx.strokeStyle = 'rgba(128,128,128,0.1)';
   ctx.lineWidth = 0.5;
   ctx.beginPath(); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.stroke();
 
+  // decay envelope (scales with force)
   ctx.strokeStyle = '#E24B4A';
   ctx.lineWidth = 1.2;
   ctx.setLineDash([5,5]);
@@ -376,20 +397,21 @@ function drawWave(elapsed) {
   for(let x=0;x<=W;x++) {
     const p = x/W;
     const d = Math.exp(-4.5*p);
-    if(x===0) ctx.moveTo(x, H/2 - d*(H*0.38));
-    else ctx.lineTo(x, H/2 - d*(H*0.38));
+    if(x===0) ctx.moveTo(x, H/2 - d*A0);
+    else ctx.lineTo(x, H/2 - d*A0);
   }
   ctx.stroke();
   ctx.beginPath();
   for(let x=0;x<=W;x++) {
     const p = x/W;
     const d = Math.exp(-4.5*p);
-    if(x===0) ctx.moveTo(x, H/2 + d*(H*0.38));
-    else ctx.lineTo(x, H/2 + d*(H*0.38));
+    if(x===0) ctx.moveTo(x, H/2 + d*A0);
+    else ctx.lineTo(x, H/2 + d*A0);
   }
   ctx.stroke();
   ctx.setLineDash([]);
 
+  // vibration wave (scaled by force)
   ctx.strokeStyle = '#378ADD';
   ctx.lineWidth = 2.2;
   ctx.beginPath();
@@ -397,23 +419,28 @@ function drawWave(elapsed) {
   for(let x=0;x<=xNow;x++) {
     const p = x/W;
     const d = Math.exp(-4.5*p);
-    const wave = Math.sin(2*Math.PI*fn*p*1.2) * d * (H*0.38);
+    const wave = Math.sin(2*Math.PI*fn*p*1.2) * d * A0;
     const y = H/2 - wave;
     if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
   }
   ctx.stroke();
 
   const decay = Math.exp(-4.5 * progress);
-  document.getElementById('amp-val').textContent = Math.round(decay*100) + '%';
+  const peakPct = Math.round(getForce() * 100);
+  document.getElementById('amp-val').textContent = Math.round(decay * peakPct) + '%';
 
   if(progress < 0.2) {
-    document.getElementById('status-box').innerHTML = 'Vibrating at its natural frequency — <strong>full energy</strong>.';
+    document.getElementById('status-box').innerHTML =
+      'Struck with <strong>' + forceLabels[forceLevel] + '</strong> force — peak amplitude <strong>' + peakPct + '%</strong>. Frequency is <strong>' + fn + ' Hz</strong> regardless of force.';
   } else if(progress < 0.6) {
-    document.getElementById('status-box').innerHTML = 'Energy slowly dissipating — <strong>same frequency</strong>, smaller amplitude.';
+    document.getElementById('status-box').innerHTML =
+      'Energy dissipating — amplitude shrinking, but <strong>frequency stays fixed at ' + fn + ' Hz</strong>.';
   } else if(progress < 0.95) {
-    document.getElementById('status-box').innerHTML = 'Almost stopped — frequency <strong>never changed</strong>, only amplitude faded.';
+    document.getElementById('status-box').innerHTML =
+      'Almost stopped — notice: <strong>frequency never changed</strong>, only amplitude faded with energy loss.';
   } else {
-    document.getElementById('status-box').innerHTML = 'Stopped. It vibrated at one fixed frequency the whole time — that is <strong>fn</strong>.';
+    document.getElementById('status-box').innerHTML =
+      'Stopped. A harder strike only raised the initial amplitude — <strong>fn = ' + fn + ' Hz</strong> stayed constant throughout.';
     document.getElementById('amp-val').textContent = '0%';
   }
 
@@ -439,38 +466,4 @@ function strike() {
   void fg.offsetWidth;
   fg.classList.add('ringing'); hm.classList.add('hitting');
 
-  tag.style.opacity = '1'; tag.style.transition = 'opacity 0.4s 0.3s';
-  dl.style.opacity = '1'; dl.style.transition = 'opacity 0.3s 0.2s';
-  dr.style.opacity = '1'; dr.style.transition = 'opacity 0.3s 0.25s';
-
-  document.getElementById('status-box').innerHTML = 'Struck! Vibrating at natural frequency <strong>fn = ' + getFn() + ' Hz</strong>.';
-  document.getElementById('amp-val').textContent = '100%';
-
-  animId = requestAnimationFrame(ts => { t0 = ts; drawWave(0); });
-}
-
-function resetFork() {
-  if(animId) cancelAnimationFrame(animId);
-  isRinging = false;
-  const fg = document.getElementById('fork-group');
-  const hm = document.getElementById('hammer');
-  fg.classList.remove('ringing'); hm.classList.remove('hitting');
-  document.getElementById('fn-tag').style.opacity = '0';
-  document.getElementById('dot-l').style.opacity = '0';
-  document.getElementById('dot-r').style.opacity = '0';
-  document.getElementById('fn-val').textContent = '—';
-  document.getElementById('amp-val').textContent = '—';
-  document.getElementById('status-box').innerHTML = 'Press <strong>Strike fork</strong> to begin.';
-  drawIdle();
-}
-
-function updateK(v) {
-  kLevel = parseInt(v);
-  document.getElementById('k-label').textContent = 'k = ' + v;
-  if(isRinging) document.getElementById('fn-val').textContent = getFn() + ' Hz';
-}
-
-drawIdle();
-</script>
-</body>
-</html>
+  tag.style.o
