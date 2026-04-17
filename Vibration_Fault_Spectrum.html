@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vibration Fault Spectrum — DM Makeup Pump-3</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#1a1a1a;padding:16px 12px 40px}
+.page{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+
+.hdr h1{font-size:17px;font-weight:700;margin-bottom:2px}
+.hdr p{font-size:11px;color:#888}
+
+.card{background:#fff;border:1px solid #e2e5ea;border-radius:12px;padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.card-ttl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#777;margin-bottom:12px}
+
+/* fault preset buttons */
+.fault-btns{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.fb{padding:7px 14px;border-radius:8px;border:1.5px solid #dde1e7;background:#fff;font-size:12px;font-family:inherit;cursor:pointer;transition:all .15s;color:#444;font-weight:500}
+.fb:hover{border-color:#378ADD;color:#1a4a7a}
+.fb.active{background:#1F3864;color:#fff;border-color:#1F3864}
+.fb.warn{border-color:#EF9F27}
+.fb.warn.active{background:#EF9F27;border-color:#EF9F27}
+.fb.crit{border-color:#E24B4A}
+.fb.crit.active{background:#E24B4A;border-color:#E24B4A}
+
+/* spectrum SVG wrapper */
+.spec-wrap{width:100%;overflow-x:auto}
+svg.spec{display:block;width:100%;height:auto}
+
+/* description panel */
+.desc-panel{margin-top:14px;padding:13px 16px;border-radius:9px;font-size:12px;line-height:1.7;border-left:4px solid #1F3864;background:rgba(31,56,100,.05);color:#333}
+.desc-panel.ok{border-color:#065f46;background:rgba(6,95,70,.05)}
+.desc-panel.warn{border-color:#EF9F27;background:rgba(239,159,39,.07)}
+.desc-panel.crit{border-color:#E24B4A;background:rgba(226,75,74,.07)}
+
+/* harmonic label pills */
+.pill{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;margin:1px}
+.p1x{background:#ffe4e4;color:#9b1c1c}
+.p2x{background:#fff3cd;color:#856404}
+.p3x{background:#e8f4fd;color:#1a4a7a}
+.p4x{background:#f0e6ff;color:#5a2d82}
+.p5x{background:#e6fff0;color:#065f46}
+.pBrg{background:#fce8ff;color:#6d1a7a}
+.pSub{background:#ffe8d6;color:#7c3100}
+
+/* reference table */
+table.ref{width:100%;border-collapse:collapse;font-size:11px}
+table.ref th{background:#f5f5f3;padding:6px 10px;text-align:left;font-size:10px;color:#888;border-bottom:1px solid #e2e5ea}
+table.ref td{padding:6px 10px;border-bottom:1px solid #f3f3f3;vertical-align:top}
+table.ref tr:last-child td{border-bottom:none}
+
+/* ISO zone bar */
+.iso-strip{display:flex;gap:3px;margin-top:8px;border-radius:7px;overflow:hidden}
+.iso-b{flex:1;text-align:center;padding:5px 3px;font-size:10px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- header -->
+<div class="hdr">
+  <h1>Vibration Fault Spectrum Analyzer — DM Makeup Pump-3</h1>
+  <p>Unit C · BIFPCL/RAMPAL · 1475 RPM = <strong>24.58 Hz (1×)</strong> · Simulated FFT spectrum for fault pattern education</p>
+</div>
+
+<!-- spectrum card -->
+<div class="card">
+  <div class="card-ttl">FFT Spectrum — Select Fault Type to Simulate</div>
+
+  <div class="fault-btns">
+    <button class="fb active"       id="fb-healthy"    onclick="setFault('healthy')">✅ Healthy</button>
+    <button class="fb warn"         id="fb-unbalance"  onclick="setFault('unbalance')">⚖ Unbalance</button>
+    <button class="fb warn"         id="fb-angular"    onclick="setFault('angular')">🔧 Angular Misalign</button>
+    <button class="fb warn"         id="fb-offset"     onclick="setFault('offset')">↔ Offset Misalign</button>
+    <button class="fb warn"         id="fb-looseness"  onclick="setFault('looseness')">🔩 Looseness</button>
+    <button class="fb crit"         id="fb-bearing"    onclick="setFault('bearing')">🔴 Bearing Defect</button>
+    <button class="fb crit"         id="fb-resonance"  onclick="setFault('resonance')">⚡ Resonance</button>
+    <button class="fb crit"         id="fb-cavitation" onclick="setFault('cavitation')">💧 Cavitation</button>
+  </div>
+
+  <div class="spec-wrap">
+    <svg id="specSVG" class="spec" viewBox="0 0 720 290" xmlns="http://www.w3.org/2000/svg">
+      <!-- background -->
+      <rect width="720" height="290" fill="#fafbfc" rx="8"/>
+
+      <!-- grid lines -->
+      <g id="gridLines" stroke="#efefef" stroke-width="1"></g>
+
+      <!-- alarm lines -->
+      <!-- ISO Zone B: ~65% of chart height -->
+      <line x1="55" y1="96" x2="695" y2="96" stroke="#ffc107" stroke-width="1" stroke-dasharray="5,4" opacity="0.6"/>
+      <text x="698" y="99" font-size="8" fill="#856404" font-family="sans-serif">Zone B</text>
+      <!-- ISO Zone C -->
+      <line x1="55" y1="144" x2="695" y2="144" stroke="#ff9800" stroke-width="1" stroke-dasharray="5,4" opacity="0.6"/>
+      <text x="698" y="147" font-size="8" fill="#9a3412" font-family="sans-serif">Zone C</text>
+
+      <!-- axes -->
+      <line x1="55" y1="20" x2="55" y2="250" stroke="#bbb" stroke-width="1.5"/>
+      <line x1="55" y1="250" x2="700" y2="250" stroke="#bbb" stroke-width="1.5"/>
+
+      <!-- Y axis label -->
+      <text x="12" y="140" font-size="10" fill="#999" font-family="sans-serif" transform="rotate(-90,12,140)">Amplitude (mm/s)</text>
+
+      <!-- X axis label -->
+      <text x="375" y="280" text-anchor="middle" font-size="10" fill="#999" font-family="sans-serif">Frequency (Hz)</text>
+
+      <!-- Y axis ticks -->
+      <g font-size="9" fill="#aaa" font-family="sans-serif" text-anchor="end">
+        <text x="50" y="253">0</text>
+        <text x="50" y="214">1</text>
+        <text x="50" y="175">2</text>
+        <text x="50" y="136">3</text>
+        <text x="50" y="97">4</text>
+        <text x="50" y="58">5</text>
+        <text x="50" y="23">6+</text>
+      </g>
+      <g stroke="#f0f0f0" stroke-width="1">
+        <line x1="55" y1="211" x2="695" y2="211"/>
+        <line x1="55" y1="172" x2="695" y2="172"/>
+        <line x1="55" y1="133" x2="695" y2="133"/>
+        <line x1="55" y1="94"  x2="695" y2="94"/>
+        <line x1="55" y1="55"  x2="695" y2="55"/>
+      </g>
+
+      <!-- X axis frequency ticks — built by JS -->
+      <g id="xTicks"></g>
+
+      <!-- bars group — built by JS -->
+      <g id="bars"></g>
+
+      <!-- frequency labels on bars — built by JS -->
+      <g id="barLabels"></g>
+
+      <!-- border -->
+      <rect width="720" height="290" fill="none" stroke="#e2e5ea" stroke-width="1" rx="8"/>
+    </svg>
+  </div>
+
+  <!-- description -->
+  <div class="desc-panel ok" id="descPanel">
+    <strong>Healthy Machine</strong> — Low 1× (residual imbalance always present), negligible 2× and higher harmonics.
+    No bearing defect frequencies. Overall velocity well within ISO Zone A.
+    This is the baseline to compare against when monitoring your pump.
+  </div>
+</div>
+
+<!-- what each pattern means -->
+<div class="card">
+  <div class="card-ttl">Fault Signature Reference — Based on SKF / IRD / Brüel &amp; Kjær</div>
+  <table class="ref">
+    <tr>
+      <th>Fault Type</th>
+      <th>Dominant Frequencies</th>
+      <th>Direction</th>
+      <th>What you see on spectrum</th>
+    </tr>
+    <tr>
+      <td><strong>Unbalance</strong></td>
+      <td><span class="pill p1x">1×</span> dominant</td>
+      <td>Radial (H &amp; V)</td>
+      <td>Single tall spike at 1×. Clean spectrum otherwise. Phase: stable ~0° or ~180°.</td>
+    </tr>
+    <tr>
+      <td><strong>Angular Misalignment</strong></td>
+      <td><span class="pill p2x">2×</span> dominant, <span class="pill p1x">1×</span> present</td>
+      <td>Axial direction high</td>
+      <td>High 2× especially axial. 180° phase difference across coupling axially.</td>
+    </tr>
+    <tr>
+      <td><strong>Offset Misalignment</strong></td>
+      <td><span class="pill p1x">1×</span> <span class="pill p2x">2×</span> both high</td>
+      <td>Radial direction</td>
+      <td>High 2× radially. 180° phase difference radially across coupling.</td>
+    </tr>
+    <tr>
+      <td><strong>Mechanical Looseness</strong></td>
+      <td><span class="pill p1x">1×</span><span class="pill p2x">2×</span><span class="pill p3x">3×</span><span class="pill p4x">4×</span><span class="pill p5x">5×</span> + sub-harmonics</td>
+      <td>Any</td>
+      <td>"Forest" of harmonics. Multiple peaks at equal spacing. Sometimes 0.5×, 1.5× sub-harmonics.</td>
+    </tr>
+    <tr>
+      <td><strong>Bearing Defect</strong></td>
+      <td><span class="pill pBrg">BPFO</span><span class="pill pBrg">BPFI</span><span class="pill pBrg">BSF</span><span class="pill pBrg">FTF</span></td>
+      <td>Radial, spike energy ↑</td>
+      <td>Non-synchronous peaks (not integer multiples of 1×). Spike energy (gSE) elevated before velocity rises.</td>
+    </tr>
+    <tr>
+      <td><strong>Resonance</strong></td>
+      <td><span class="pill p1x">1×</span> extremely high</td>
+      <td>Radial, all directions</td>
+      <td>Massive 1× peak when fn ≈ running speed. Phase shift of 90°. Amplitude sensitive to small speed changes.</td>
+    </tr>
+    <tr>
+      <td><strong>Cavitation</strong></td>
+      <td>Broadband noise + <span class="pill p5x">vane pass</span></td>
+      <td>Radial, high freq</td>
+      <td>Raised noise floor across all frequencies. Vane pass frequency (n×blades × 1×) may be prominent. Random broadband excitation.</td>
+    </tr>
+  </table>
+</div>
+
+<!-- bearing frequencies for this pump -->
+<div class="card">
+  <div class="card-ttl">Bearing Defect Frequencies — DM Pump-3 (Approximate, 1475 RPM)</div>
+  <p style="font-size:11px;color:#888;margin-bottom:10px;line-height:1.5">
+    Actual bearing defect frequencies depend on bearing geometry (number of balls, contact angle, pitch diameter, ball diameter).
+    The values below use typical ratios for medium-duty pump bearings. For exact values use bearing manufacturer data (SKF, FAG, NSK).
+  </p>
+  <table class="ref">
+    <tr>
+      <th>Frequency Name</th>
+      <th>Abbr.</th>
+      <th>Typical Ratio</th>
+      <th>Approx. Hz (at 1475 RPM)</th>
+      <th>Fault indicated</th>
+    </tr>
+    <tr>
+      <td>Fundamental Train Frequency</td>
+      <td><span class="pill pBrg">FTF</span></td>
+      <td>~0.4× running speed</td>
+      <td>~9.8 Hz</td>
+      <td>Cage defect / cage slip</td>
+    </tr>
+    <tr>
+      <td>Ball Pass Frequency Outer race</td>
+      <td><span class="pill pBrg">BPFO</span></td>
+      <td>~3.6× running speed</td>
+      <td>~88.5 Hz</td>
+      <td>Outer race pitting / spalling</td>
+    </tr>
+    <tr>
+      <td>Ball Pass Frequency Inner race</td>
+      <td><span class="pill pBrg">BPFI</span></td>
+      <td>~5.4× running speed</td>
+      <td>~132.7 Hz</td>
+      <td>Inner race pitting / spalling</td>
+    </tr>
+    <tr>
+      <td>Ball Spin Frequency</td>
+      <td><span class="pill pBrg">BSF</span></td>
+      <td>~2.4× running speed</td>
+      <td>~59.0 Hz</td>
+      <td>Ball / rolling element defect</td>
+    </tr>
+  </table>
+  <p style="margin-top:8px;font-size:10px;color:#aaa;line-height:1.5">
+    ⚠ Bearing defect frequencies are non-synchronous — they are NOT integer multiples of running speed.
+    This is what distinguishes them from unbalance/misalignment/looseness on an FFT spectrum.
+    Elevated spike energy (gSE) is often the first indicator — before these frequencies appear clearly on the spectrum.
+  </p>
+</div>
+
+<!-- ISO zones -->
+<div class="card">
+  <div class="card-ttl">ISO 10816-3 Severity Reference — Pumps &gt;15 kW</div>
+  <div class="iso-strip">
+    <div class="iso-b" style="background:#d1fae5;color:#065f46">Zone A<br>0 – 2.3 mm/s<br><span style="font-size:9px;font-weight:400">New / good condition</span></div>
+    <div class="iso-b" style="background:#fef9c3;color:#854d0e">Zone B<br>2.3 – 4.5 mm/s<br><span style="font-size:9px;font-weight:400">Acceptable long-term</span></div>
+    <div class="iso-b" style="background:#fed7aa;color:#9a3412">Zone C<br>4.5 – 7.1 mm/s<br><span style="font-size:9px;font-weight:400">Investigate soon</span></div>
+    <div class="iso-b" style="background:#fecaca;color:#7f1d1d">Zone D<br>&gt; 7.1 mm/s<br><span style="font-size:9px;font-weight:400">Danger — shut down</span></div>
+  </div>
+  <p style="margin-top:8px;font-size:10px;color:#aaa;line-height:1.5">
+    ISO 10816-3 uses overall broadband velocity RMS to classify severity. It does NOT identify fault type.
+    Fault identification requires FFT spectrum analysis as shown above.
+  </p>
+</div>
+
+</div><!-- end page -->
+
+<script>
+// ── Running speed ──
+var RUN = 24.58; // Hz
+
+// ── Spectrum bar definitions ──
+// Each bar: { id, label, freq, color_class, pilll }
+var HARM_BARS = [
+  { id:'sub',  label:'0.5×', freq: RUN*0.5,  cls:'pSub' },
+  { id:'ftf',  label:'FTF',  freq: RUN*0.40, cls:'pBrg' },
+  { id:'h1',   label:'1×',   freq: RUN*1,    cls:'p1x'  },
+  { id:'bsf',  label:'BSF',  freq: RUN*2.4,  cls:'pBrg' },
+  { id:'h2',   label:'2×',   freq: RUN*2,    cls:'p2x'  },
+  { id:'h3',   label:'3×',   freq: RUN*3,    cls:'p3x'  },
+  { id:'bpfo', label:'BPFO', freq: RUN*3.6,  cls:'pBrg' },
+  { id:'h4',   label:'4×',   freq: RUN*4,    cls:'p4x'  },
+  { id:'h5',   label:'5×',   freq: RUN*5,    cls:'p5x'  },
+  { id:'bpfi', label:'BPFI', freq: RUN*5.4,  cls:'pBrg' },
+  { id:'h6',   label:'6×',   freq: RUN*6,    cls:'p3x'  },
+  { id:'h7',   label:'7×',   freq: RUN*7,    cls:'p4x'  }
+];
+
+// ── Fault amplitude presets ──
+// Keys match bar ids; values 0-100 (% of full scale = 6 mm/s)
+var FAULTS = {
+  healthy: {
+    sub:0, ftf:2, h1:15, bsf:2, h2:5, h3:2, bpfo:2, h4:1, h5:1, bpfi:2, h6:1, h7:1,
+    cls:'ok', name:'✅ Healthy',
+    desc:'<strong>Healthy Machine</strong> — Low 1× (residual imbalance always present), negligible 2× and higher harmonics. No bearing defect frequencies elevated. Overall velocity well within ISO Zone A. This is the baseline to compare against when monitoring your pump over time.'
+  },
+  unbalance: {
+    sub:0, ftf:2, h1:85, bsf:2, h2:10, h3:5, bpfo:2, h4:3, h5:2, bpfi:2, h6:2, h7:1,
+    cls:'warn', name:'⚖ Unbalance',
+    desc:'<strong>Unbalance</strong> — Single dominant 1× peak. 2× and harmonics remain low. Vibration is predominantly radial (H &amp; V). Phase reading is stable (typically 0° or 180°). Cause: mass distribution uneven on rotating element (impeller, shaft). Fix: dynamic balancing of rotor. <em>Reference: ISO 1940-1 — Balance Quality Requirements.</em>'
+  },
+  angular: {
+    sub:0, ftf:2, h1:40, bsf:3, h2:75, h3:20, bpfo:3, h4:10, h5:5, bpfi:3, h6:5, h7:3,
+    cls:'warn', name:'🔧 Angular Misalignment',
+    desc:'<strong>Angular Misalignment</strong> — High 2× especially in axial direction. 1× also present. Phase difference of 180° measured axially across the coupling. Cause: motor and pump shaft centerlines meet at an angle at the coupling. Fix: angular alignment correction. <em>Reference: ISO 10816, SKF Shaft Alignment Handbook.</em>'
+  },
+  offset: {
+    sub:0, ftf:2, h1:55, bsf:3, h2:65, h3:15, bpfo:3, h4:8, h5:5, bpfi:3, h6:5, h7:2,
+    cls:'warn', name:'↔ Offset Misalignment',
+    desc:'<strong>Offset (Parallel) Misalignment</strong> — Both 1× and 2× prominent in radial directions. Phase difference of 180° radially across coupling. Cause: motor and pump centerlines are parallel but offset (not collinear). Fix: parallel alignment correction. Often both angular and offset misalignment exist together. <em>Reference: IRD Mechanalysis Application Note.</em>'
+  },
+  looseness: {
+    sub:30, ftf:2, h1:50, bsf:3, h2:45, h3:40, bpfo:3, h4:35, h5:30, bpfi:3, h6:28, h7:25,
+    cls:'warn', name:'🔩 Mechanical Looseness',
+    desc:'<strong>Mechanical Looseness</strong> — "Forest" of harmonics: 1×, 2×, 3×, 4×, 5× and beyond all elevated. Sub-harmonics (0.5×, 1.5×) may appear. Vibration is erratic and changes with load. Cause: loose hold-down bolts, worn bearing housing, loose impeller fit, structural looseness. Fix: tighten fasteners, replace worn housing. <em>Reference: Brüel &amp; Kjær — Machinery Diagnostics.</em>'
+  },
+  bearing: {
+    sub:2, ftf:40, h1:20, bsf:55, h2:8, h3:5, bpfo:75, h4:5, h5:5, bpfi:65, h6:4, h7:3,
+    cls:'crit', name:'🔴 Bearing Defect',
+    desc:'<strong>Bearing Defect</strong> — Non-synchronous frequencies (BPFO, BPFI, BSF, FTF) are elevated. These are NOT integer multiples of running speed — this distinguishes bearing faults from imbalance/misalignment. Spike energy (gSE) is elevated before these appear clearly on spectrum. For DM Pump-3: PDE spike energy 6.2 H / 4.6 V / 4.2 A indicates active outer race / cage distress. <em>Reference: SKF Bearing Maintenance Handbook, IRD Spike Energy method.</em>'
+  },
+  resonance: {
+    sub:5, ftf:3, h1:98, bsf:3, h2:15, h3:8, bpfo:3, h4:5, h5:3, bpfi:3, h6:3, h7:2,
+    cls:'crit', name:'⚡ Resonance',
+    desc:'<strong>Structural Resonance</strong> — Extremely high 1× amplitude when natural frequency (fn) coincides with running speed. Amplitude is 10–50× normal. Phase shifts 90° at resonance point. Sensitive to small changes in running speed. Cause: structural stiffness loss (bore wear, loose mounting) brings fn close to 1×. For DM Pump-3: PDE-V at 2.2 mm/s with fn ≈ 26.1 Hz — gap of only 1.52 Hz from 1×. <em>Reference: ISO 7919-3, Brüel &amp; Kjær — Structural Resonance.</em>'
+  },
+  cavitation: {
+    sub:5, ftf:5, h1:30, bsf:8, h2:12, h3:10, bpfo:10, h4:8, h5:45, bpfi:10, h6:15, h7:12,
+    cls:'crit', name:'💧 Cavitation',
+    desc:'<strong>Cavitation</strong> — Raised broadband noise floor across all frequencies, especially at high frequencies. Vane pass frequency (number of impeller vanes × 1× running speed) may be prominent. For a 5-vane impeller: 5× = 122.9 Hz. Random broadband excitation from bubble collapse inside pump. Cause: insufficient NPSH, cavitation erosion inside impeller. Fix: increase suction head, reduce flow restriction. <em>Reference: Hydraulic Institute Standards, ISO 9906 Pump Testing.</em>'
+  }
+};
+
+// ── SVG dimensions ──
+var PLOT_X0 = 60, PLOT_X1 = 695;
+var PLOT_Y0 = 20, PLOT_Y1 = 250;
+var PLOT_W  = PLOT_X1 - PLOT_X0; // 635
+var PLOT_H  = PLOT_Y1 - PLOT_Y0; // 230
+var FMAX    = 200; // Hz shown on x axis
+
+function freqToX(hz) {
+  return PLOT_X0 + (hz / FMAX) * PLOT_W;
+}
+
+function ampToY(pct) {
+  // pct 0-100 maps to PLOT_Y1 down to PLOT_Y0
+  return PLOT_Y1 - (pct / 100) * PLOT_H;
+}
+
+// ── Build static axes ──
+function buildAxes() {
+  var xt = document.getElementById('xTicks');
+  var marks = [0, 25, 50, 75, 100, 125, 150, 175, 200];
+  marks.forEach(function(hz) {
+    var x = freqToX(hz);
+    xt.innerHTML +=
+      '<line x1="'+x+'" y1="'+PLOT_Y1+'" x2="'+x+'" y2="'+(PLOT_Y1+4)+'" stroke="#ccc" stroke-width="1"/>' +
+      '<text x="'+x+'" y="'+(PLOT_Y1+13)+'" text-anchor="middle" font-size="9" fill="#aaa" font-family="sans-serif">'+hz+'</text>';
+  });
+
+  // running speed harmonic markers
+  var runMarks = [
+    {hz:RUN,   label:'1×'},
+    {hz:RUN*2, label:'2×'},
+    {hz:RUN*3, label:'3×'},
+    {hz:RUN*4, label:'4×'},
+    {hz:RUN*5, label:'5×'}
+  ];
+  runMarks.forEach(function(m) {
+    var x = freqToX(m.hz);
+    xt.innerHTML +=
+      '<line x1="'+x+'" y1="'+PLOT_Y0+'" x2="'+x+'" y2="'+PLOT_Y1+'" stroke="#eee" stroke-width="1" stroke-dasharray="3,4"/>' +
+      '<text x="'+x+'" y="'+(PLOT_Y1+22)+'" text-anchor="middle" font-size="8" fill="#ccc" font-family="sans-serif">'+m.label+'</text>';
+  });
+}
+
+// ── Build / update bars ──
+var barEls  = {}; // id -> rect element
+var lblEls  = {}; // id -> text element
+
+function buildBars() {
+  var g = document.getElementById('bars');
+  var gl = document.getElementById('barLabels');
+  g.innerHTML = ''; gl.innerHTML = '';
+
+  HARM_BARS.forEach(function(b) {
+    var x  = freqToX(b.freq);
+    var bw = 10; // bar width px
+
+    var rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    rect.setAttribute('x',      x - bw/2);
+    rect.setAttribute('y',      PLOT_Y1);
+    rect.setAttribute('width',  bw);
+    rect.setAttribute('height', 0);
+    rect.setAttribute('rx',     2);
+    rect.style.transition = 'height .4s ease, y .4s ease, fill .3s';
+    g.appendChild(rect);
+    barEls[b.id] = rect;
+
+    // label above bar
+    var txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+    txt.setAttribute('x', x);
+    txt.setAttribute('y', PLOT_Y1 - 4);
+    txt.setAttribute('text-anchor','middle');
+    txt.setAttribute('font-size','8');
+    txt.setAttribute('font-family','sans-serif');
+    txt.setAttribute('fill','#aaa');
+    txt.textContent = b.label;
+    gl.appendChild(txt);
+    lblEls[b.id] = txt;
+  });
+}
+
+function barColor(pct, cls) {
+  if (cls === 'pBrg' || cls === 'pSub') {
+    // bearing / sub = purple tones
+    if (pct > 60) return '#9c27b0';
+    if (pct > 30) return '#ce93d8';
+    return '#e1bee7';
+  }
+  // harmonic bars
+  if (pct > 65) return '#E24B4A';
+  if (pct > 40) return '#EF9F27';
+  if (pct > 10) return '#378ADD';
+  return '#b0c8e8';
+}
+
+function updateBars(faultKey) {
+  var f = FAULTS[faultKey];
+  HARM_BARS.forEach(function(b) {
+    var pct  = f[b.id] || 0;
+    var h    = (pct / 100) * PLOT_H;
+    var y    = PLOT_Y1 - h;
+    var rect = barEls[b.id];
+    var lbl  = lblEls[b.id];
+    rect.setAttribute('y',      y);
+    rect.setAttribute('height', h);
+    rect.setAttribute('fill',   barColor(pct, b.cls));
+    // label
+    lbl.setAttribute('y', Math.max(y - 3, PLOT_Y0 + 10));
+    lbl.setAttribute('fill', pct > 5 ? '#555' : '#ddd');
+  });
+}
+
+// ── Fault button state ──
+var currentFault = 'healthy';
+
+function setFault(key) {
+  currentFault = key;
+  // update button active state
+  document.querySelectorAll('.fb').forEach(function(b) { b.classList.remove('active'); });
+  document.getElementById('fb-'+key).classList.add('active');
+  // update bars
+  updateBars(key);
+  // update description
+  var f   = FAULTS[key];
+  var dp  = document.getElementById('descPanel');
+  dp.className = 'desc-panel ' + f.cls;
+  dp.innerHTML = f.desc;
+}
+
+// ── Init ──
+buildAxes();
+buildBars();
+setFault('healthy');
+</script>
+</body>
+</html>
