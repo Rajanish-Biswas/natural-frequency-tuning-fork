@@ -363,8 +363,9 @@ const W = canvas.width, H = canvas.height;
 let kLevel = 3;
 let forceLevel = 3;
 let animId = null;
-let t0 = null;
+let startTime = null;
 let isRinging = false;
+const FRAME_MS = 30; // ~33fps via setTimeout, works in all iframes
 
 const kFreqs  = {1:6, 2:12, 3:20, 4:30, 5:42};
 const forceAmp = {1:0.20, 2:0.40, 3:0.60, 4:0.80, 5:1.00};
@@ -452,14 +453,14 @@ function drawWave(elapsed) {
   }
 
   if(progress < 1) {
-    animId = requestAnimationFrame(ts => drawWave(ts - t0));
+    animId = setTimeout(() => drawWave(Date.now() - startTime), FRAME_MS);
   } else {
     isRinging = false;
   }
 }
 
 function strike() {
-  if(animId) cancelAnimationFrame(animId);
+  if(animId) clearTimeout(animId);
   isRinging = true;
   document.getElementById('fn-val').textContent = getFn() + ' Hz';
 
@@ -467,6 +468,4 @@ function strike() {
   const hm = document.getElementById('hammer');
   const tag = document.getElementById('fn-tag');
   const dl = document.getElementById('dot-l');
-  const dr = document.getElementById('dot-r');
-
-  fg.classList.remove('ringing'); hm.classList.remove('hitting');
+  const dr = document.getElementB
