@@ -285,8 +285,8 @@
       </svg>
 
       <div class="btn-row">
-        <button class="primary" onclick="strike()">Strike fork</button>
-        <button onclick="resetFork()">Reset</button>
+        <button class="primary" id="btn-strike">Strike fork</button>
+        <button id="btn-reset">Reset</button>
       </div>
 
       <div class="formula">f<sub>n</sub> = <sup>1</sup>/<sub>2π</sub> √(k/m)</div>
@@ -321,7 +321,7 @@
         <label>Stiffness (k) — higher stiffness raises natural frequency</label>
         <div class="slider-track">
           <span>Soft</span>
-          <input type="range" id="k-slider" min="1" max="5" step="1" value="3" oninput="updateK(this.value)">
+          <input type="range" id="k-slider" min="1" max="5" step="1" value="3">
           <span>Stiff</span>
           <span id="k-label" style="min-width:36px;font-size:11px;color:#555;">k = 3</span>
         </div>
@@ -331,7 +331,7 @@
         <label>Impact Force (F) — higher force sets a larger initial amplitude (frequency stays the same)</label>
         <div class="slider-track">
           <span>Light</span>
-          <input type="range" id="f-slider" min="1" max="5" step="1" value="3" oninput="updateF(this.value)">
+          <input type="range" id="f-slider" min="1" max="5" step="1" value="3">
           <span>Hard</span>
           <span id="f-label" style="min-width:36px;font-size:11px;color:#555;">F = 3</span>
         </div>
@@ -466,4 +466,5 @@ function strike() {
   void fg.offsetWidth;
   fg.classList.add('ringing'); hm.classList.add('hitting');
 
-  tag.style.o
+  tag.style.opacity = '1'; tag.style.transition = 'opacity 0.4s 0.3s';
+  dl.style.o
