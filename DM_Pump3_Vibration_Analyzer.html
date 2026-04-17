@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DM Makeup Pump-3 — Vibration Analyzer</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#1a1a1a;padding:16px 12px 40px}
+.page{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+
+/* header */
+.hdr h1{font-size:17px;font-weight:700;margin-bottom:2px}
+.hdr p{font-size:11px;color:#888}
+
+/* cards */
+.card{background:#fff;border:1px solid #e2e5ea;border-radius:12px;padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.card-ttl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#777;margin-bottom:12px}
+
+/* ── Wave visualizer ── */
+.viz-wrap{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start}
+.fork-col{flex:0 0 180px;display:flex;flex-direction:column;align-items:center;gap:10px}
+.wave-col{flex:1;min-width:260px}
+
+/* SVG wave container */
+.svg-wrap{position:relative;width:100%;border:1px solid #dde1e7;border-radius:10px;background:#fafbfc;overflow:hidden}
+.svg-wrap svg{display:block;width:100%;height:auto}
+
+.legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:5px;font-size:10px;color:#888}
+.legend span{display:flex;align-items:center;gap:4px}
+
+/* metrics row */
+.mrow{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.mbox{background:#f5f5f3;border-radius:8px;padding:9px 11px}
+.mlbl{font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
+.mval{font-size:17px;font-weight:700;letter-spacing:-.02em}
+
+/* sliders */
+.sl{margin-top:10px}
+.sl label{font-size:11px;color:#666;display:block;margin-bottom:4px}
+.sl-row{display:flex;align-items:center;gap:8px}
+.sl-row span{font-size:10px;color:#bbb;min-width:28px}
+input[type=range]{flex:1;height:4px;-webkit-appearance:none;appearance:none;background:rgba(0,0,0,.12);border-radius:2px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#1F3864;cursor:pointer;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.14)}
+
+/* status */
+.status{margin-top:10px;font-size:12px;color:#444;min-height:34px;line-height:1.6;padding:7px 11px;background:rgba(31,56,100,.05);border-radius:7px;border-left:3px solid #1F3864}
+
+/* buttons */
+.brow{display:flex;gap:8px;flex-wrap:wrap}
+button{padding:7px 14px;border:1px solid rgba(0,0,0,.14);border-radius:7px;background:transparent;color:#333;font-size:12px;font-family:inherit;cursor:pointer;transition:background .12s}
+button:hover{background:rgba(0,0,0,.05)}
+.bpri{background:#1F3864;color:#fff;border-color:#1F3864}
+.bpri:hover{background:#2e4f8a}
+.bact{background:#EF9F27;color:#fff;border-color:#EF9F27}
+
+/* condition buttons */
+.cond-btns{display:flex;flex-direction:column;gap:4px;width:100%;margin-top:4px}
+.cond-btns button{font-size:11px;padding:5px 8px;text-align:left}
+
+/* formula */
+.formula{font-size:13px;text-align:center;color:#444;font-weight:500;margin-top:4px}
+
+/* fork animation */
+@keyframes str{0%{transform:rotate(0)}15%{transform:rotate(-18deg)}35%{transform:rotate(4deg)}55%{transform:rotate(0)}100%{transform:rotate(0)}}
+@keyframes hmr{0%,60%,100%{transform:translate(0,0) rotate(-30deg)}25%{transform:translate(18px,10px) rotate(-30deg)}}
+.fg{transform-origin:300px 240px}
+.fg.rng{animation:str .45s ease-out forwards}
+.hm{transform-origin:240px 195px;transform:rotate(-30deg)}
+.hm.hit{animation:hmr .38s ease-in-out forwards}
+
+/* ── Data input table ── */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:#f0f2f5;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#666;padding:7px 8px;text-align:center;border-bottom:1px solid #e2e5ea;white-space:nowrap}
+tbody td{padding:6px 8px;text-align:center;border-bottom:1px solid #f3f3f3;vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr.warn td{background:#fffbeb}
+tbody tr.crit td{background:#fff1f2}
+
+/* number inputs in table */
+input.vinp{width:58px;border:1px solid #dde1e7;border-radius:5px;padding:3px 5px;font-size:12px;text-align:center;font-family:inherit;background:#f9fafb;color:#1a1a1a}
+input.vinp:focus{outline:none;border-color:#378ADD;background:#fff}
+
+/* badges */
+.bd{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;white-space:nowrap}
+.bd1{background:#ffe4e4;color:#9b1c1c}
+.bd2{background:#fff3cd;color:#856404}
+.bdx{background:#e8f4fd;color:#1a4a7a}
+.bdn{background:#f0f0f0;color:#666}
+
+/* ISO zone colours */
+.zA{color:#065f46;font-weight:700}
+.zB{color:#854d0e;font-weight:700}
+.zC{color:#9a3412;font-weight:700}
+.zD{color:#7f1d1d;font-weight:700}
+
+/* ── Resonance gauge ── */
+.gauge-bar{height:16px;border-radius:8px;overflow:hidden;background:linear-gradient(to right,#4caf50 0%,#ffc107 60%,#f44336 100%);position:relative;flex:1}
+.gauge-pin{position:absolute;top:0;width:4px;height:100%;background:#1a1a1a;border-radius:2px;transition:left .5s}
+.grow{display:flex;align-items:center;gap:10px;margin:6px 0}
+
+/* ISO bands strip */
+.iso-strip{display:flex;gap:3px;margin-top:8px;border-radius:7px;overflow:hidden}
+.iso-b{flex:1;text-align:center;padding:5px 3px;font-size:10px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ── Header ── -->
+<div class="hdr">
+  <h1>DM Makeup Pump-3 — Vibration Frequency Analyzer</h1>
+  <p>Unit C · BIFPCL/RAMPAL · Running speed: 1475 RPM = <strong>24.58 Hz (1×)</strong> · Date recorded: 16 Apr 2026</p>
+</div>
+
+<!-- ── Visualizer ── -->
+<div class="card">
+  <div class="card-ttl">Natural Frequency Wave Visualizer</div>
+  <div class="viz-wrap">
+
+    <!-- fork -->
+    <div class="fork-col">
+      <svg width="180" height="255" viewBox="160 80 220 250">
+        <g class="fg" id="fg">
+          <path d="M294 200Q280 160 286 120" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>
+          <path d="M306 200Q320 160 314 120" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>
+          <rect x="294" y="198" width="12" height="65" rx="4" fill="currentColor"/>
+          <rect x="284" y="259" width="32" height="10" rx="3" fill="currentColor"/>
+        </g>
+        <g class="hm" id="hm">
+          <rect x="198" y="178" width="40" height="16" rx="5" fill="#378ADD" opacity=".85"/>
+          <rect x="230" y="165" width="6" height="30" rx="2" fill="#378ADD" opacity=".7"/>
+        </g>
+        <text id="ftag" x="300" y="108" text-anchor="middle" font-size="11" fill="#378ADD" font-family="inherit" opacity="0">fn</text>
+        <circle id="dl" cx="278" cy="130" r="4" fill="#EF9F27" opacity="0"/>
+        <circle id="dr" cx="322" cy="126" r="4" fill="#EF9F27" opacity="0"/>
+      </svg>
+
+      <div class="brow">
+        <button class="bpri" id="bStrike">▶ Strike</button>
+        <button id="bReset">Reset</button>
+      </div>
+
+      <div class="cond-btns">
+        <div style="font-size:9px;color:#aaa;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-top:2px">Simulate condition</div>
+        <button id="bNow"  class="bact">✅ Current  fn = 26.1 Hz</button>
+        <button id="bWorn">⚠️ Worn bore fn = 25.1 Hz</button>
+        <button id="bRes" >🔴 Resonance fn = 24.6 Hz</button>
+      </div>
+
+      <div class="formula">f<sub>n</sub> = <sup>1</sup>/<sub>2π</sub> √(k/m)</div>
+    </div>
+
+    <!-- wave SVG -->
+    <div class="wave-col">
+      <p style="font-size:11px;color:#888;margin-bottom:5px">
+        Vibration amplitude vs time — Left = just after strike (peak), Right = energy dissipated (zero)
+      </p>
+
+      <!-- ▼▼▼  SVG WAVE — guaranteed to render in all browsers  ▼▼▼ -->
+      <svg id="wsvg" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg"
+           style="display:block;width:100%;height:auto;min-height:160px;border:1px solid #dde1e7;border-radius:10px;background:#fafbfc">
+
+        <!-- background rect (confirms canvas area) -->
+        <rect width="500" height="200" fill="#fafbfc"/>
+
+        <!-- centre line -->
+        <line x1="0" y1="100" x2="500" y2="100" stroke="#e0e0e0" stroke-width="1"/>
+
+        <!-- 1× reference band (orange dashed) -->
+        <line id="r1" x1="0" y1="28" x2="500" y2="28" stroke="#EF9F27" stroke-width="1" stroke-dasharray="5,4" opacity="0"/>
+        <line id="r2" x1="0" y1="172" x2="500" y2="172" stroke="#EF9F27" stroke-width="1" stroke-dasharray="5,4" opacity="0"/>
+        <text id="rLbl" x="494" y="24" text-anchor="end" font-size="9" fill="#EF9F27" font-family="sans-serif" opacity="0">1× ref</text>
+
+        <!-- decay envelope top (red dashed) -->
+        <polyline id="envT" points="" fill="none" stroke="#E24B4A" stroke-width="1.5" stroke-dasharray="6,5"/>
+        <!-- decay envelope bottom (red dashed) -->
+        <polyline id="envB" points="" fill="none" stroke="#E24B4A" stroke-width="1.5" stroke-dasharray="6,5"/>
+
+        <!-- vibration wave (blue solid) — THIS IS THE MAIN WAVE -->
+        <polyline id="wline" points="" fill="none" stroke="#378ADD" stroke-width="3"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+
+        <!-- cursor (vertical moving line) -->
+        <line id="cur" x1="0" y1="4" x2="0" y2="196" stroke="#1F3864" stroke-width="2"
+              stroke-dasharray="4,3" opacity="0"/>
+        <circle id="cdot" cx="0" cy="100" r="5" fill="#1F3864" opacity="0"/>
+
+        <!-- idle message (hidden after first strike) -->
+        <text id="idleTxt" x="250" y="93" text-anchor="middle" font-size="13"
+              fill="rgba(0,0,0,0.22)" font-family="-apple-system,sans-serif">
+          Strike the fork to see the vibration wave
+        </text>
+        <text id="idleSub" x="250" y="116" text-anchor="middle" font-size="10"
+              fill="rgba(0,0,0,0.14)" font-family="-apple-system,sans-serif">
+          PDE-Vertical: 2.2 mm/s · fn ≈ 26.1 Hz · 1× = 24.58 Hz
+        </text>
+
+        <!-- resonance warning (shown only at resonance) -->
+        <rect id="resBox" width="500" height="200" fill="rgba(220,50,50,0.07)" rx="8" opacity="0"/>
+        <text id="resTxt" x="250" y="18" text-anchor="middle" font-size="12" font-weight="bold"
+              fill="#9b1c1c" font-family="-apple-system,sans-serif" opacity="0">
+          ⚠ RESONANCE — fn ≈ 1× running speed — amplitude explodes!
+        </text>
+
+        <!-- border -->
+        <rect width="500" height="200" fill="none" stroke="#dde1e7" stroke-width="1" rx="10"/>
+      </svg>
+
+      <div class="legend">
+        <span><svg width="22" height="6"><line x1="0" y1="3" x2="22" y2="3" stroke="#378ADD" stroke-width="3"/></svg> vibration wave</span>
+        <span><svg width="22" height="6"><line x1="0" y1="3" x2="22" y2="3" stroke="#E24B4A" stroke-width="2" stroke-dasharray="5,4"/></svg> decay envelope</span>
+        <span><svg width="22" height="6"><line x1="0" y1="3" x2="22" y2="3" stroke="#EF9F27" stroke-width="1.5" stroke-dasharray="4,3"/></svg> 1× speed ref</span>
+        <span><svg width="4" height="14"><line x1="2" y1="0" x2="2" y2="14" stroke="#1F3864" stroke-width="2" stroke-dasharray="3,2"/></svg> current time</span>
+      </div>
+
+      <div class="mrow">
+        <div class="mbox"><div class="mlbl">Natural Freq (fn)</div><div class="mval" id="mFn" style="color:#378ADD">—</div></div>
+        <div class="mbox"><div class="mlbl">1× Running Speed</div><div class="mval" style="color:#EF9F27">24.58 Hz</div></div>
+        <div class="mbox"><div class="mlbl">Peak Amplitude</div><div class="mval" id="mPeak" style="color:#9B59B6">—</div></div>
+        <div class="mbox"><div class="mlbl">Current Amplitude</div><div class="mval" id="mAmp" style="color:#E24B4A">—</div></div>
+      </div>
+
+      <div class="sl">
+        <label>Stiffness (k) — bore wear lowers k → fn drops toward 1× → resonance risk ↑</label>
+        <div class="sl-row">
+          <span>Worn</span>
+          <input type="range" id="ksl" min="1" max="5" step="1" value="3">
+          <span>Stiff</span>
+          <span id="klbl" style="font-size:11px;color:#444;min-width:34px">k = 3</span>
+        </div>
+      </div>
+      <div class="sl">
+        <label>Impact Force (F) — sets initial amplitude only; fn is unchanged by force</label>
+        <div class="sl-row">
+          <span>Light</span>
+          <input type="range" id="fsl" min="1" max="5" step="1" value="3">
+          <span>Hard</span>
+          <span id="flbl" style="font-size:11px;color:#444;min-width:34px">F = 3</span>
+        </div>
+      </div>
+
+      <div class="status" id="sts">Press <strong>▶ Strike</strong> to simulate. Try the 3 condition presets to see how bore wear leads to resonance.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Resonance gauge ── -->
+<div class="card">
+  <div class="card-ttl">Resonance Proximity — fn vs 1× Running Speed (24.58 Hz)</div>
+  <div class="grow">
+    <span style="font-size:10px;color:#aaa;white-space:nowrap">Safe</span>
+    <div class="gauge-bar"><div class="gauge-pin" id="gpin" style="left:15%"></div></div>
+    <span style="font-size:10px;color:#aaa;white-space:nowrap">Resonance</span>
+    <span class="bd" id="gpill" style="white-space:nowrap;background:#e8f4fd;color:#1a4a7a">MONITORING</span>
+  </div>
+  <p id="gDesc" style="font-size:12px;color:#555;line-height:1.6;margin-top:6px">
+    Current fn (PDE-Vertical) ≈ <strong>26.1 Hz</strong> — gap from 1× = <strong>1.52 Hz</strong>.
+    Spike Energy at PDE = <strong style="color:#9b1c1c">6.2 H / 4.6 V / 4.2 A</strong> (early bearing distress).
+    As bore wears → stiffness drops → fn approaches 24.58 Hz → resonance → rapid vibration escalation even at Zone A velocity.
+  </p>
+  <div style="font-size:9px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-top:12px;margin-bottom:4px">
+    ISO 10816-3 Severity Zones (45 kW pump) · Current max reading: 2.2 mm/s RMS
+  </div>
+  <div class="iso-strip">
+    <div class="iso-b" style="background:#d1fae5;color:#065f46">Zone A<br>0 – 2.3 mm/s<br><span style="font-weight:400;font-size:9px">✅ All readings</span></div>
+    <div class="iso-b" style="background:#fef9c3;color:#854d0e">Zone B<br>2.3 – 4.5<br><span style="font-weight:400;font-size:9px">Watch trend</span></div>
+    <div class="iso-b" style="background:#fed7aa;color:#9a3412">Zone C<br>4.5 – 7.1<br><span style="font-weight:400;font-size:9px">Investigate</span></div>
+    <div class="iso-b" style="background:#fecaca;color:#7f1d1d">Zone D<br>&gt; 7.1 mm/s<br><span style="font-weight:400;font-size:9px">Danger</span></div>
+  </div>
+</div>
+
+<!-- ── Vibration data input + analysis table ── -->
+<div class="card">
+  <div class="card-ttl">
+    Vibration Data Input &amp; Frequency Analysis
+    <span style="font-size:9px;font-weight:400;color:#aaa;text-transform:none;letter-spacing:0;margin-left:8px">
+      — edit any cell; Dominant Freq, Harmonic &amp; Inference update automatically
+    </span>
+  </div>
+  <p style="font-size:11px;color:#666;margin-bottom:10px;line-height:1.5">
+    Running speed: <strong>1475 RPM = 24.58 Hz (1×)</strong> &nbsp;|&nbsp;
+    Formula: <strong>f = v<sub>rms</sub> × √2 ÷ (π × D<sub>pk-pk</sub>)</strong> &nbsp;|&nbsp;
+    D<sub>pk-pk</sub> in mm &nbsp;|&nbsp; All velocities in mm/s RMS
+  </p>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th rowspan="2">Point</th>
+          <th rowspan="2">Dir</th>
+          <th colspan="2" style="background:#eef6ff;color:#1a4a7a">Input data (editable)</th>
+          <th rowspan="2" style="background:#e8f4fd;color:#1a4a7a;min-width:110px">Dominant<br>Freq (Hz)<br><span style="font-size:8px;font-weight:400">v×√2 ÷ π×D</span></th>
+          <th rowspan="2" style="min-width:110px">Closest<br>Harmonic</th>
+          <th rowspan="2" style="min-width:160px;text-align:left;padding-left:12px">Inference<br><span style="font-size:8px;font-weight:400;color:#aaa">(fault type indicated)</span></th>
+          <th rowspan="2">ISO<br>Zone</th>
+        </tr>
+        <tr>
+          <th style="background:#eef6ff;color:#1a4a7a">Vel RMS<br>(mm/s)</th>
+          <th style="background:#eef6ff;color:#1a4a7a">Disp pk-pk<br>(µm)</th>
+        </tr>
+      </thead>
+      <tbody id="vtbody"></tbody>
+    </table>
+  </div>
+  <p style="margin-top:8px;font-size:10px;color:#aaa;line-height:1.5">
+    * Dominant frequency assumes a single dominant frequency in the broadband reading. For accurate spectral analysis, use a vibration analyser / FFT instrument.
+    Spike energy is a separate bearing condition indicator (not frequency-based).
+  </p>
+</div>
+
+<!-- ── What each column means ── -->
+<div class="card">
+  <div class="card-ttl">Understanding the Analysis Columns</div>
+  <div style="font-size:12px;color:#444;line-height:1.7">
+    <p><strong>Dominant Frequency</strong> — the single frequency that best explains both your velocity (mm/s) and displacement (µm) readings together.
+    It tells you <em>where</em> the vibration energy is concentrated. Since a real machine has many frequencies mixed, this is the strongest one dominating the broadband reading.</p>
+    <br>
+    <p><strong>Closest Harmonic</strong> — compares your dominant frequency to the pump's running speed harmonics:
+    1× = 24.58 Hz, 2× = 49.17 Hz, 3× = 73.75 Hz. Matching a harmonic narrows down the mechanical cause.</p>
+    <br>
+    <table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:4px">
+      <tr style="background:#f5f5f3">
+        <th style="padding:6px 10px;text-align:left;font-size:10px;color:#888;border-bottom:1px solid #e2e5ea">Harmonic matched</th>
+        <th style="padding:6px 10px;text-align:left;font-size:10px;color:#888;border-bottom:1px solid #e2e5ea">Direction</th>
+        <th style="padding:6px 10px;text-align:left;font-size:10px;color:#888;border-bottom:1px solid #e2e5ea">Inference (fault type)</th>
+        <th style="padding:6px 10px;text-align:left;font-size:10px;color:#888;border-bottom:1px solid #e2e5ea">Your pump — where it appears</th>
+      </tr>
+      <tr><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">1× (24.58 Hz)</td><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">H or V</td><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">Unbalance / bent shaft / near-resonance</td><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3;color:#9b1c1c"><strong>PDE-V 26.1 Hz ← critical finding</strong></td></tr>
+      <tr><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">1× (24.58 Hz)</td><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">Axial</td><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">Near-resonance + axial thrust issue</td><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">PDE-A 29.3 Hz (1.2×)</td></tr>
+      <tr><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">2× (49.17 Hz)</td><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">Axial</td><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">Angular misalignment between motor–pump coupling</td><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3;color:#856404"><strong>MNDE-A ~50 Hz → check coupling</strong></td></tr>
+      <tr><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">2× (49.17 Hz)</td><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">H or V</td><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">Offset misalignment / mechanical looseness</td><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">MDE-H ~45 Hz (near 2×)</td></tr>
+      <tr><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">3× or higher</td><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">Any</td><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">Looseness, bearing cage, vane pass</td><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">MDE-V ~90 Hz (~3.7×)</td></tr>
+      <tr><td style="padding:6px 10px">Non-harmonic</td><td style="padding:6px 10px">Any</td><td style="padding:6px 10px">Bearing defect freq (BPFI / BPFO) or cavitation</td><td style="padding:6px 10px">Spike energy 6.2 at PDE → bearing wear</td></tr>
+    </table>
+    <p style="margin-top:10px">
+      <strong>What picture does this table show you?</strong>
+      Without a spectrum analyser you only see a single broadband number (e.g. 2.2 mm/s).
+      This table reverse-engineers the dominant frequency from the velocity + displacement pair, then maps it to a likely fault mechanism.
+      You can't distinguish unbalance from resonance from misalignment by velocity alone —
+      the dominant frequency is the key that separates them.
+    </p>
+  </div>
+</div>
+
+</div><!-- end page -->
+
+<script>
+// ════════════════════════════════════════════════════════
+//  CONSTANTS
+// ════════════════════════════════════════════════════════
+var RUN = 24.58;   // 1× running frequency (Hz)
+var SX  = 500;     // SVG internal width
+var SY  = 200;     // SVG internal height
+
+// k-level → fn (calibrated to this pump)
+var KFN  = {1:24.58, 2:25.10, 3:26.10, 4:30.00, 5:38.00};
+var FAMP = {1:0.20,  2:0.40,  3:0.62,  4:0.82,  5:1.00 };
+var FLBL = {1:'Very Light',2:'Light',3:'Moderate',4:'Hard',5:'Full Strike'};
+
+var kLev=3, fLev=3, tid=null, t0=null, going=false;
+var DUR=5000;
+
+function fn()    { return KFN[kLev]; }
+function amp()   { return FAMP[fLev]; }
+function gid(id) { return document.getElementById(id); }
+
+// ════════════════════════════════════════════════════════
+//  WAVE BUILDING  (SVG polyline points string)
+// ════════════════════════════════════════════════════════
+function wavePoints(freq, A0) {
+  var s = '';
+  for (var x = 0; x <= SX; x++) {
+    var t = x / SX;
+    var y = (SY/2) - Math.sin(2*Math.PI*freq*t*1.2) * A0 * Math.exp(-4.2*t);
+    s += x+','+y.toFixed(2)+' ';
+  }
+  return s;
+}
+function envPoints(A0, sign) {
+  var s = '';
+  for (var x = 0; x <= SX; x++) {
+    var y = (SY/2) + sign * A0 * Math.exp(-4.2*x/SX);
+    s += x+','+y.toFixed(2)+' ';
+  }
+  return s;
+}
+
+// ════════════════════════════════════════════════════════
+//  GAUGE
+// ════════════════════════════════════════════════════════
+function refreshGauge() {
+  var diff = fn() - RUN;                        // positive = safe
+  var pct  = Math.max(2, Math.min(97, 100 - (diff/14)*100));
+  gid('gpin').style.left = pct+'%';
+  var pill = gid('gpill');
+  if (pct >= 90) { pill.style.background='#ffe4e4'; pill.style.color='#9b1c1c'; pill.textContent='RESONANCE!'; }
+  else if (pct >= 60) { pill.style.background='#fff3cd'; pill.style.color='#856404'; pill.textContent='WARNING'; }
+  else { pill.style.background='#e8f4fd'; pill.style.color='#1a4a7a'; pill.textContent='MONITORING'; }
+}
+
+// ════════════════════════════════════════════════════════
+//  DRAW WAVE  — paints wave + envelope to SVG immediately
+// ════════════════════════════════════════════════════════
+function drawWave() {
+  var freq  = fn();
+  var dist  = freq - RUN;   // Hz above resonance
+  // amplification: gets bigger as fn approaches 1×
+  var boost = dist < 5 ? 1 + (5-dist)*0.5 : 1;
+  var A0    = Math.min(amp() * SY * 0.40 * boost, SY*0.46);
+
+  // wave colour: red if resonance, blue otherwise
+  var wCol = dist < 1 ? '#E24B4A' : '#378ADD';
+
+  // set polyline points — this is what draws the wave
+  gid('wline').setAttribute('points', wavePoints(freq, A0));
+  gid('wline').setAttribute('stroke', wCol);
+  gid('envT').setAttribute('points', envPoints(A0, -1));
+  gid('envB').setAttribute('points', envPoints(A0, +1));
+
+  // show/hide elements
+  gid('r1').setAttribute('opacity','0.7');
+  gid('r2').setAttribute('opacity','0.7');
+  gid('rLbl').setAttribute('opacity','0.7');
+  gid('idleTxt').setAttribute('opacity','0');
+  gid('idleSub').setAttribute('opacity','0');
+  gid('resBox').setAttribute('opacity', dist<1 ? '1':'0');
+  gid('resTxt').setAttribute('opacity', dist<1 ? '1':'0');
+
+  return A0;
+}
+
+// ════════════════════════════════════════════════════════
+//  ANIMATE CURSOR
+// ════════════════════════════════════════════════════════
+function tick(A0) {
+  var elapsed = Date.now() - t0;
+  var prog    = Math.min(elapsed/DUR, 1);
+  var xc      = Math.round(prog*(SX-1));
+  var freq    = fn();
+
+  // move cursor
+  gid('cur').setAttribute('x1', xc); gid('cur').setAttribute('x2', xc);
+  gid('cur').setAttribute('opacity', prog>0&&prog<1 ? '0.7':'0');
+  var tc  = xc/SX;
+  var yc  = (SY/2) - Math.sin(2*Math.PI*freq*tc*1.2)*A0*Math.exp(-4.2*tc);
+  gid('cdot').setAttribute('cx', xc);
+  gid('cdot').setAttribute('cy', yc.toFixed(2));
+  gid('cdot').setAttribute('opacity', prog>0&&prog<1 ? '1':'0');
+
+  // amplitude metric
+  var decay = Math.exp(-4.2*prog);
+  var pk    = Math.round(amp()*100);
+  gid('mAmp').textContent = Math.round(decay*pk)+'%';
+
+  // status text
+  var dist = freq - RUN;
+  var sb   = gid('sts');
+  if (dist < 1) {
+    sb.innerHTML = '🔴 <strong>RESONANCE</strong> — fn ('+freq.toFixed(1)+' Hz) has reached 1× running speed. Amplitude boosted '+
+      (1+(5-dist)*0.5).toFixed(1)+'×. Even small disturbances cause large vibration.';
+  } else if (dist < 3) {
+    sb.innerHTML = '⚠️ fn = '+freq.toFixed(1)+' Hz, only <strong>'+dist.toFixed(2)+' Hz above 1×</strong>. Near-resonance — small bore wear will push into resonance.';
+  } else if (prog < 0.5) {
+    sb.innerHTML = 'fn = <strong>'+freq.toFixed(1)+' Hz</strong> · Gap from 1×: '+dist.toFixed(1)+' Hz · Amplitude '+pk+'% → '+Math.round(decay*pk)+'% as energy dissipates.';
+  } else {
+    sb.innerHTML = 'fn = <strong>'+freq.toFixed(1)+' Hz</strong> stayed constant — frequency never changes, only amplitude decays.';
+    if (prog >= 1) { gid('mAmp').textContent='0%'; going=false; return; }
+  }
+
+  tid = setTimeout(function(){ tick(A0); }, 30);
+}
+
+// ════════════════════════════════════════════════════════
+//  STRIKE
+// ════════════════════════════════════════════════════════
+function doStrike() {
+  if (tid) clearTimeout(tid);
+  going = true;
+
+  // update metrics
+  gid('mFn').textContent   = fn().toFixed(1)+' Hz';
+  gid('mPeak').textContent = Math.round(amp()*100)+'%';
+  gid('mAmp').textContent  = Math.round(amp()*100)+'%';
+
+  // fork CSS animation
+  var fg=gid('fg'), hm=gid('hm');
+  fg.classList.remove('rng'); hm.classList.remove('hit');
+  void fg.offsetWidth;
+  fg.classList.add('rng'); hm.classList.add('hit');
+  gid('ftag').style.opacity='1'; gid('ftag').style.transition='opacity .4s .3s';
+  gid('dl').style.opacity='1'; gid('dr').style.opacity='1';
+
+  // draw wave immediately — SVG polyline updates synchronously
+  var A0 = drawWave();
+
+  // start cursor animation
+  t0 = Date.now();
+  tick(A0);
+}
+
+// ════════════════════════════════════════════════════════
+//  RESET
+// ════════════════════════════════════════════════════════
+function doReset() {
+  if (tid) clearTimeout(tid);
+  going = false;
+  var fg=gid('fg'), hm=gid('hm');
+  fg.classList.remove('rng'); hm.classList.remove('hit');
+  ['ftag','dl','dr'].forEach(function(id){ gid(id).style.opacity='0'; });
+  gid('wline').setAttribute('points','');
+  gid('envT').setAttribute('points','');
+  gid('envB').setAttribute('points','');
+  ['cur','cdot','r1','r2','rLbl','resBox','resTxt'].forEach(function(id){ gid(id).setAttribute('opacity','0'); });
+  gid('idleTxt').setAttribute('opacity','1');
+  gid('idleSub').setAttribute('opacity','1');
+  gid('mFn').textContent='—'; gid('mPeak').textContent='—'; gid('mAmp').textContent='—';
+  gid('sts').innerHTML='Press <strong>▶ Strike</strong> to simulate. Use condition presets to compare states.';
+}
+
+// ════════════════════════════════════════════════════════
+//  SLIDERS
+// ════════════════════════════════════════════════════════
+function setK(v) {
+  kLev=parseInt(v);
+  gid('klbl').textContent='k = '+v;
+  refreshGauge();
+  if (going) { gid('mFn').textContent=fn().toFixed(1)+' Hz'; drawWave(); }
+}
+function setF(v) {
+  fLev=parseInt(v);
+  gid('flbl').textContent='F = '+v;
+  if (going) gid('mPeak').textContent=Math.round(amp()*100)+'%';
+}
+
+// ════════════════════════════════════════════════════════
+//  CONDITION PRESETS
+// ════════════════════════════════════════════════════════
+function setMode(targetFn, fVal, btnId) {
+  // find closest k level
+  var bk=3, bd=999;
+  for (var k=1;k<=5;k++) { var d=Math.abs(KFN[k]-targetFn); if(d<bd){bd=d;bk=k;} }
+  kLev=bk; fLev=fVal;
+  gid('ksl').value=kLev; gid('fsl').value=fLev;
+  gid('klbl').textContent='k = '+kLev;
+  gid('flbl').textContent='F = '+fLev;
+  ['bNow','bWorn','bRes'].forEach(function(id){ gid(id).className=''; });
+  gid(btnId).className='bact';
+  refreshGauge();
+  gid('sts').innerHTML='Mode set: fn = '+targetFn.toFixed(1)+' Hz. Press <strong>▶ Strike</strong> to simulate.';
+  if (going) doStrike();
+}
+
+// ════════════════════════════════════════════════════════
+//  VIBRATION DATA TABLE
+// ════════════════════════════════════════════════════════
+var ROWS = [
+  {pt:'MNDE', full:'Motor NDE', dir:'H', vel:0.7,  disp:9,  spike:'—',       cls:''},
+  {pt:'MNDE', full:'Motor NDE', dir:'V', vel:0.4,  disp:3,  spike:'—',       cls:''},
+  {pt:'MNDE', full:'Motor NDE', dir:'A', vel:1.0,  disp:9,  spike:'—',       cls:''},
+  {pt:'MDE',  full:'Motor DE',  dir:'H', vel:0.7,  disp:7,  spike:'3.4/2.7', cls:''},
+  {pt:'MDE',  full:'Motor DE',  dir:'V', vel:0.4,  disp:2,  spike:'3.4/2.7', cls:''},
+  {pt:'MDE',  full:'Motor DE',  dir:'A', vel:0.7,  disp:7,  spike:'3.4/2.7', cls:''},
+  {pt:'PNDE', full:'Pump NDE',  dir:'H', vel:1.3,  disp:17, spike:'—',       cls:'warn'},
+  {pt:'PNDE', full:'Pump NDE',  dir:'V', vel:1.6,  disp:22, spike:'—',       cls:'warn'},
+  {pt:'PDE',  full:'Pump DE',   dir:'H', vel:1.1,  disp:11, spike:'6.2',     cls:''},
+  {pt:'PDE',  full:'Pump DE',   dir:'V', vel:2.2,  disp:38, spike:'4.6',     cls:'crit'},
+  {pt:'PDE',  full:'Pump DE',   dir:'A', vel:1.3,  disp:20, spike:'4.2',     cls:''}
+];
+
+function calcHz(vel, disp) {
+  if (!vel || !disp) return null;
+  // f = v_rms × √2 / (π × D_pk-pk_in_mm)
+  return (vel * Math.SQRT2) / (Math.PI * (disp / 1000));
+}
+
+function harmonic(hz) {
+  if (!hz) return '—';
+  var d1=Math.abs(hz-RUN), d2=Math.abs(hz-RUN*2), d3=Math.abs(hz-RUN*3);
+  var mn=Math.min(d1,d2,d3);
+  if (mn===d1) return '1× ('+RUN+' Hz)';
+  if (mn===d2) return '2× ('+(RUN*2).toFixed(2)+' Hz)';
+  return '3× ('+(RUN*3).toFixed(2)+' Hz)';
+}
+
+function harmClass(hz) {
+  if (!hz) return 'bdn';
+  var d1=Math.abs(hz-RUN), d2=Math.abs(hz-RUN*2);
+  if (d1<=5) return 'bd1';
+  if (d2<=6) return 'bd2';
+  return 'bdx';
+}
+
+function getInference(hz, dir) {
+  if (!hz) return '—';
+  var d1=Math.abs(hz-RUN), d2=Math.abs(hz-RUN*2), d3=Math.abs(hz-RUN*3);
+  var mn=Math.min(d1,d2,d3);
+  if (mn===d1) {
+    if (d1<=2) return '⚠ Near-resonance (fn ≈ 1×) — bore wear likely';
+    if (dir==='A') return 'Resonance + axial thrust / bent shaft';
+    return 'Unbalance / eccentricity / near-resonance';
+  }
+  if (mn===d2) {
+    if (dir==='A') return '⚠ Angular misalignment (motor–pump coupling)';
+    return 'Offset misalignment / mechanical looseness';
+  }
+  if (mn===d3) return 'Looseness / bearing cage / 3× excitation';
+  return 'Check bearing defect frequencies (BPFI/BPFO)';
+}
+
+function isoZone(vel) {
+  if (!vel) return '—';
+  if (vel<=2.3) return '<span class="zA">A ✅</span>';
+  if (vel<=4.5) return '<span class="zB">B ⚠</span>';
+  if (vel<=7.1) return '<span class="zC">C 🔶</span>';
+  return '<span class="zD">D 🔴</span>';
+}
+
+function buildVibTable() {
+  var tb = gid('vtbody');
+  tb.innerHTML = '';
+
+  // group rows to merge Point column
+  var prev='', span=0, firstIdx=[];
+  ROWS.forEach(function(r,i){ if(r.pt!==prev){firstIdx.push(i);prev=r.pt;} });
+
+  ROWS.forEach(function(row, idx) {
+    var hz   = calcHz(row.vel, row.disp);
+    var hzTxt = hz ? hz.toFixed(1)+' Hz' : '—';
+    var hc   = harmClass(hz);
+    var tr   = document.createElement('tr');
+    tr.className = row.cls;
+
+    // count how many rows share this point
+    var isFirst = firstIdx.indexOf(idx) >= 0;
+    var ptCount = 0;
+    if (isFirst) { ROWS.forEach(function(r){ if(r.pt===row.pt) ptCount++; }); }
+
+    var ptCell = isFirst
+      ? '<td rowspan="'+ptCount+'" style="font-weight:700;vertical-align:middle;background:#fafafa">'+row.pt+'<br><span style="font-size:9px;color:#aaa;font-weight:400">'+row.full+'</span></td>'
+      : '';
+
+    tr.innerHTML = ptCell +
+      '<td style="font-weight:600;color:#555">'+row.dir+'</td>'+
+      '<td><input class="vinp" type="number" value="'+row.vel+'" step="0.1" min="0" data-i="'+idx+'" data-f="vel"></td>'+
+      '<td><input class="vinp" type="number" value="'+row.disp+'" step="1" min="0" data-i="'+idx+'" data-f="disp"></td>'+
+      '<td><span class="bd '+hc+'">'+hzTxt+'</span></td>'+
+      '<td style="font-size:11px;color:#555">'+harmonic(hz)+'</td>'+
+      '<td style="font-size:11px;color:#444;text-align:left;padding-left:10px">'+getInference(hz,row.dir)+'</td>'+
+      '<td>'+isoZone(row.vel)+'</td>';
+
+    tb.appendChild(tr);
+  });
+
+  // attach input listeners
+  tb.querySelectorAll('input.vinp').forEach(function(inp) {
+    inp.addEventListener('input', function() {
+      var i = parseInt(this.dataset.i);
+      var f = this.dataset.f;
+      ROWS[i][f] = parseFloat(this.value) || 0;
+      buildVibTable();
+    });
+  });
+}
+
+// ════════════════════════════════════════════════════════
+//  WIRE UP EVENTS
+// ════════════════════════════════════════════════════════
+gid('bStrike').addEventListener('click', doStrike);
+gid('bReset').addEventListener('click',  doReset);
+gid('ksl').addEventListener('input', function(){ setK(this.value); });
+gid('fsl').addEventListener('input', function(){ setF(this.value); });
+gid('bNow').addEventListener('click',  function(){ setMode(26.1, 3, 'bNow'); });
+gid('bWorn').addEventListener('click', function(){ setMode(25.1, 4, 'bWorn'); });
+gid('bRes').addEventListener('click',  function(){ setMode(24.58,5, 'bRes'); });
+
+// ════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════
+refreshGauge();
+buildVibTable();
+</script>
+</body>
+</html>
