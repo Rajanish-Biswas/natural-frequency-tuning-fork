@@ -596,7 +596,7 @@ function harmClass(hz) {
 function getInference(hz, dir, vel) {
   if (!hz || !vel) return '—';
   // Below 1.5 mm/s = well inside Zone A — severity too low to infer any fault
-  if (vel < 1.5) return '<span style="color:#065f46">✅ Zone A — severity normal, no fault indicated</span>';
+  if (vel < 1.5) return '<span style="color:#065f46">✅ Normal — within Zone A</span>';
   var d1=Math.abs(hz-RUN), d2=Math.abs(hz-RUN*2), d3=Math.abs(hz-RUN*3);
   var mn=Math.min(d1,d2,d3);
   if (mn===d1) {
@@ -678,4 +678,4 @@ gid('bNow').addEventListener('click',  function(){ setMode(26.1, 3, 'bNow'); });
 gid('bWorn').addEventListener('click', function(){ setMode(25.1, 4, 'bWorn'); });
 gid('bRes').addEventListener('click',  function(){ setMode(24.58,5, 'bRes'); });
 
-// ═══════════════════════════════════�
+// ══════════════════════════════════════════�
