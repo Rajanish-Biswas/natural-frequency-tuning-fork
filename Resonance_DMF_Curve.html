@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resonance — Amplitude Magnification Factor</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:#111;color:#e0e0e0;min-height:100vh;padding:28px 24px 40px}
+.page{max-width:860px;margin:0 auto}
+
+h1{font-size:16px;font-weight:500;color:#ccc;margin-bottom:4px;letter-spacing:.01em}
+.sub{font-size:11px;color:#555;margin-bottom:24px}
+
+/* SVG chart */
+.chart-wrap{width:100%;margin-bottom:28px}
+svg.chart{display:block;width:100%;height:auto}
+
+/* sliders */
+.sliders{display:flex;flex-direction:column;gap:16px;margin-bottom:28px}
+.sl-row{display:grid;grid-template-columns:180px 1fr 70px;align-items:center;gap:12px}
+.sl-label{font-size:13px;color:#aaa}
+input[type=range]{width:100%;height:3px;-webkit-appearance:none;appearance:none;background:#333;border-radius:2px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#4a9eff;cursor:pointer;border:2px solid #111;box-shadow:0 0 0 2px rgba(74,158,255,.3)}
+.sl-val{font-size:13px;color:#4a9eff;text-align:right;font-variant-numeric:tabular-nums}
+
+/* cards */
+.cards{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.card{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:14px 18px;min-width:160px;flex:1}
+.card-lbl{font-size:11px;color:#555;margin-bottom:4px}
+.card-val{font-size:22px;font-weight:700;color:#fff;letter-spacing:-0.02em}
+
+/* status */
+.status{display:inline-block;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600}
+.status.stable  {background:rgba(6,95,70,.25);color:#34d399;border:1px solid rgba(52,211,153,.2)}
+.status.warning {background:rgba(120,80,0,.3);color:#fbbf24;border:1px solid rgba(251,191,36,.2)}
+.status.danger  {background:rgba(120,20,20,.35);color:#f87171;border:1px solid rgba(248,113,113,.2)}
+
+/* formula note */
+.formula{margin-top:20px;padding:12px 16px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:9px;font-size:12px;color:#666;line-height:1.7}
+.formula strong{color:#888}
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>Resonance — Dynamic Magnification Factor</h1>
+<p class="sub">How much does the amplitude grow as forcing frequency approaches natural frequency?</p>
+
+<!-- SVG chart -->
+<div class="chart-wrap">
+<svg id="chartSVG" class="chart" viewBox="0 0 800 420" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- background -->
+  <rect width="800" height="420" fill="#111"/>
+
+  <!-- plot area background -->
+  <rect x="70" y="20" width="700" height="330" fill="#0e0e0e" rx="4"/>
+
+  <!-- grid lines -->
+  <g stroke="#1e1e1e" stroke-width="1">
+    <!-- horizontal -->
+    <line x1="70" y1="75"  x2="770" y2="75"/>
+    <line x1="70" y1="130" x2="770" y2="130"/>
+    <line x1="70" y1="185" x2="770" y2="185"/>
+    <line x1="70" y1="240" x2="770" y2="240"/>
+    <line x1="70" y1="295" x2="770" y2="295"/>
+    <!-- vertical -->
+    <line x1="140" y1="20" x2="140" y2="350"/>
+    <line x1="210" y1="20" x2="210" y2="350"/>
+    <line x1="280" y1="20" x2="280" y2="350"/>
+    <line x1="350" y1="20" x2="350" y2="350"/>
+    <line x1="420" y1="20" x2="420" y2="350"/>
+    <line x1="490" y1="20" x2="490" y2="350"/>
+    <line x1="560" y1="20" x2="560" y2="350"/>
+    <line x1="630" y1="20" x2="630" y2="350"/>
+    <line x1="700" y1="20" x2="700" y2="350"/>
+  </g>
+
+  <!-- axes -->
+  <line x1="70" y1="20"  x2="70"  y2="350" stroke="#444" stroke-width="1.5"/>
+  <line x1="70" y1="350" x2="770" y2="350" stroke="#444" stroke-width="1.5"/>
+
+  <!-- Y axis labels -->
+  <g font-size="12" fill="#555" font-family="sans-serif" text-anchor="end">
+    <text x="60" y="354">0</text>
+    <text x="60" y="299">2</text>
+    <text x="60" y="244">4</text>
+    <text x="60" y="189">6</text>
+    <text x="60" y="134">8</text>
+    <text x="60" y="79">10</text>
+    <text x="60" y="30">12</text>
+  </g>
+
+  <!-- X axis labels -->
+  <g font-size="11" fill="#555" font-family="sans-serif" text-anchor="middle">
+    <text x="70"  y="368">0.0</text>
+    <text x="140" y="368">0.3</text>
+    <text x="210" y="368">0.6</text>
+    <text x="280" y="368">0.9</text>
+    <text x="350" y="368">1.2</text>  <!-- near resonance -->
+    <text x="420" y="368">1.5</text>
+    <text x="490" y="368">1.8</text>
+    <text x="560" y="368">2.1</text>
+    <text x="630" y="368">2.4</text>
+    <text x="700" y="368">2.7</text>
+  </g>
+
+  <!-- axis titles -->
+  <text x="420" y="395" text-anchor="middle" font-size="12" fill="#555" font-family="sans-serif">Frequency ratio  r = ω / ωₙ</text>
+  <text x="18" y="185" text-anchor="middle" font-size="12" fill="#555" font-family="sans-serif" transform="rotate(-90,18,185)">Amplitude magnification factor</text>
+
+  <!-- resonance reference line at r=1 -->
+  <line id="resLine" x1="280" y1="20" x2="280" y2="350" stroke="#333" stroke-width="1" stroke-dasharray="4,4"/>
+  <text x="283" y="32" font-size="9" fill="#444" font-family="sans-serif">r = 1</text>
+
+  <!-- DMF curve -->
+  <polyline id="dmfCurve" points="" fill="none" stroke="#4a9eff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- operating point dot -->
+  <circle id="opDot" cx="140" cy="295" r="7" fill="#E24B4A" stroke="#111" stroke-width="2"/>
+
+  <!-- border -->
+  <rect x="70" y="20" width="700" height="330" fill="none" stroke="#222" stroke-width="1" rx="4"/>
+
+</svg>
+</div>
+
+<!-- sliders -->
+<div class="sliders">
+  <div class="sl-row">
+    <label class="sl-label">Forcing frequency ω</label>
+    <input type="range" id="omegaSlider" min="0.05" max="3.0" step="0.01" value="0.50">
+    <span class="sl-val"><span id="omegaVal">0.50</span> rad/s</span>
+  </div>
+  <div class="sl-row">
+    <label class="sl-label">Damping ratio ζ</label>
+    <input type="range" id="zetaSlider"  min="0.01" max="0.99" step="0.01" value="0.10">
+    <span class="sl-val"><span id="zetaVal">0.10</span></span>
+  </div>
+</div>
+
+<!-- cards -->
+<div class="cards">
+  <div class="card">
+    <div class="card-lbl">Natural freq ωₙ</div>
+    <div class="card-val" id="cardWn" style="color:#4a9eff">1.00 rad/s</div>
+  </div>
+  <div class="card">
+    <div class="card-lbl">Freq ratio r = ω/ωₙ</div>
+    <div class="card-val" id="cardR">0.50</div>
+  </div>
+  <div class="card">
+    <div class="card-lbl">Amplitude factor</div>
+    <div class="card-val" id="cardM" style="color:#E24B4A">—</div>
+  </div>
+</div>
+
+<!-- status -->
+<span class="status stable" id="statusBox">System is stable</span>
+
+<!-- formula note -->
+<div class="formula">
+  <strong>Formula (from classical vibration theory):</strong><br>
+  M(r) = 1 / √[ (1 − r²)² + (2ζr)² ]<br><br>
+  where r = ω/ωₙ (frequency ratio), ζ = damping ratio.<br>
+  At resonance (r = 1): M = 1/(2ζ) — amplification depends entirely on damping.<br>
+  Low damping (ζ = 0.05) → M ≈ 10×.  Typical pump bearing housing: ζ ≈ 0.05–0.15.
+  <br><br>
+  <strong>Reference:</strong> Rao, S.S. — Mechanical Vibrations (Pearson). Den Hartog, J.P. — Mechanical Vibrations (Dover). ISO 7919-3.
+</div>
+
+</div><!-- end page -->
+
+<script>
+// constants
+var Wn    = 1.0;   // natural frequency (normalised to 1)
+var RMAX  = 3.0;   // x axis max ratio
+var MMAX  = 12.0;  // y axis max amplitude
+
+// SVG plot bounds
+var PX0 = 70, PX1 = 770;  // x
+var PY0 = 20, PY1 = 350;  // y (top to bottom)
+var PW  = PX1 - PX0;
+var PH  = PY1 - PY0;
+
+function rToX(r)  { return PX0 + (r / RMAX) * PW; }
+function mToY(m)  { return PY1 - Math.min(m, MMAX) / MMAX * PH; }
+
+// DMF formula
+function dmf(r, zeta) {
+  var denom = Math.sqrt(Math.pow(1 - r*r, 2) + Math.pow(2*zeta*r, 2));
+  return 1 / denom;
+}
+
+function buildCurve(zeta) {
+  var pts = '';
+  var steps = 600;
+  for (var i = 0; i <= steps; i++) {
+    var r = (i / steps) * RMAX;
+    if (r < 0.001) r = 0.001;
+    var m = dmf(r, zeta);
+    var x = rToX(r);
+    var y = mToY(m);
+    pts += x.toFixed(1) + ',' + y.toFixed(1) + ' ';
+  }
+  return pts;
+}
+
+function update() {
+  var omega = parseFloat(document.getElementById('omegaSlider').value);
+  var zeta  = parseFloat(document.getElementById('zetaSlider').value);
+  var r     = omega / Wn;
+  var m     = dmf(r, zeta);
+
+  // display values
+  document.getElementById('omegaVal').textContent = omega.toFixed(2);
+  document.getElementById('zetaVal').textContent  = zeta.toFixed(2);
+  document.getElementById('cardR').textContent    = r.toFixed(2);
+  document.getElementById('cardM').textContent    = (m > 50 ? '>50' : m.toFixed(2)) + '×';
+
+  // redraw curve
+  document.getElementById('dmfCurve').setAttribute('points', buildCurve(zeta));
+
+  // move dot
+  var dx = rToX(r);
+  var dy = mToY(m);
+  document.getElementById('opDot').setAttribute('cx', dx.toFixed(1));
+  document.getElementById('opDot').setAttribute('cy', dy.toFixed(1));
+
+  // dot color
+  var dotColor = r > 0.85 && r < 1.15 ? '#E24B4A' : r > 0.7 && r < 1.3 ? '#EF9F27' : '#E24B4A';
+  document.getElementById('opDot').setAttribute('fill', dotColor);
+
+  // status
+  var sb = document.getElementById('statusBox');
+  if (r >= 0.95 && r <= 1.05) {
+    sb.className = 'status danger';
+    sb.textContent = '⚠ RESONANCE — r ≈ 1.0 — amplitude explodes!';
+  } else if ((r >= 0.80 && r < 0.95) || (r > 1.05 && r <= 1.20)) {
+    sb.className = 'status warning';
+    sb.textContent = 'Near resonance — r = ' + r.toFixed(2) + ' — monitor closely';
+  } else {
+    sb.className = 'status stable';
+    sb.textContent = 'System is stable — r = ' + r.toFixed(2);
+  }
+
+  // card colour for amplitude
+  var mc = document.getElementById('cardM');
+  if (m > 5)      mc.style.color = '#f87171';
+  else if (m > 2) mc.style.color = '#fbbf24';
+  else            mc.style.color = '#34d399';
+}
+
+// wire up
+document.getElementById('omegaSlider').addEventListener('input', update);
+document.getElementById('zetaSlider').addEventListener('input',  update);
+
+// init
+update();
+</script>
+</body>
+</html>
