@@ -77,10 +77,15 @@
 
   canvas {
     width: 100%;
-    height: auto;
+    height: 180px;
     border: 0.5px solid rgba(0,0,0,0.1);
     border-radius: 10px;
     display: block;
+    background: #fafafa;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    canvas { background: #1e1e1e; }
   }
 
   .btn-row {
@@ -349,6 +354,8 @@
 </div>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+
 const canvas = document.getElementById('wave-canvas');
 const ctx = canvas.getContext('2d');
 const W = canvas.width, H = canvas.height;
@@ -463,8 +470,3 @@ function strike() {
   const dr = document.getElementById('dot-r');
 
   fg.classList.remove('ringing'); hm.classList.remove('hitting');
-  void fg.offsetWidth;
-  fg.classList.add('ringing'); hm.classList.add('hitting');
-
-  tag.style.opacity = '1'; tag.style.transition = 'opacity 0.4s 0.3s';
-  dl.style.o
