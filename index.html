@@ -311,4 +311,39 @@ function doReset() {
   gid('env-top').setAttribute('points', '');
   gid('env-bot').setAttribute('points', '');
   gid('cursor').setAttribute('opacity', '0');
-  gid('idl
+  gid('idle-txt').setAttribute('opacity', '1');
+  gid('idle-sub').setAttribute('opacity', '1');
+
+  gid('fn-val').textContent     = '—';
+  gid('fn-display').textContent = '—';
+  gid('peak-val').textContent   = '—';
+  gid('amp-val').textContent    = '—';
+
+  gid('status-box').innerHTML = 'Press <strong>▶ Strike</strong> to begin. Try different stiffness levels — watch how frequency changes. Then change force — notice frequency stays the same.';
+}
+
+// ── sliders ──
+function updateK(v) {
+  kLevel = parseInt(v);
+  gid('k-label').textContent = 'k = ' + v;
+  gid('fn-display').textContent = getFn() + ' Hz';
+  if (going) { gid('fn-val').textContent = getFn() + ' Hz'; drawWave(); }
+}
+
+function updateF(v) {
+  fLevel = parseInt(v);
+  gid('f-label').textContent = 'F = ' + v;
+  if (going) {
+    gid('peak-val').textContent = Math.round(getForce() * 100) + '%';
+    drawWave();
+  }
+}
+
+// ── wire up events ──
+gid('btn-strike').addEventListener('click', doStrike);
+gid('btn-reset').addEventListener('click',  doReset);
+gid('k-slider').addEventListener('input', function() { updateK(this.value); });
+gid('f-slider').addEventListener('input', function() { updateF(this.value); });
+</script>
+</body>
+</html>
