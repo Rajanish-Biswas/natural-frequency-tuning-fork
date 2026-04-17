@@ -274,15 +274,14 @@ input.vinp:focus{outline:none;border-color:#378ADD;background:#fff}
 <!-- ── Vibration data input + analysis table ── -->
 <div class="card">
   <div class="card-ttl">
-    Vibration Data Input &amp; Frequency Analysis
+    Vibration Data — Broadband Readings
     <span style="font-size:9px;font-weight:400;color:#aaa;text-transform:none;letter-spacing:0;margin-left:8px">
-      — edit any cell; Dominant Freq, Harmonic &amp; Inference update automatically
+      — edit any cell; ISO Zone updates automatically
     </span>
   </div>
   <p style="font-size:11px;color:#666;margin-bottom:10px;line-height:1.5">
     Running speed: <strong>1475 RPM = 24.58 Hz (1×)</strong> &nbsp;|&nbsp;
-    Formula: <strong>f = v<sub>rms</sub> × √2 ÷ (π × D<sub>pk-pk</sub>)</strong> &nbsp;|&nbsp;
-    D<sub>pk-pk</sub> in mm &nbsp;|&nbsp; All velocities in mm/s RMS
+    Velocity per <strong>ISO 10816-3</strong> &nbsp;|&nbsp; Displacement per <strong>ISO 7919-3</strong> &nbsp;|&nbsp; Spike Energy per <strong>SKF/IRD</strong>
   </p>
   <div class="tbl-wrap">
     <table>
@@ -291,10 +290,8 @@ input.vinp:focus{outline:none;border-color:#378ADD;background:#fff}
           <th rowspan="2">Point</th>
           <th rowspan="2">Dir</th>
           <th colspan="2" style="background:#eef6ff;color:#1a4a7a">Input data (editable)</th>
-          <th rowspan="2" style="background:#e8f4fd;color:#1a4a7a;min-width:110px">Dominant<br>Freq (Hz)<br><span style="font-size:8px;font-weight:400">v×√2 ÷ π×D</span></th>
-          <th rowspan="2" style="min-width:110px">Closest<br>Harmonic</th>
-          <th rowspan="2" style="min-width:160px;text-align:left;padding-left:12px">Inference<br><span style="font-size:8px;font-weight:400;color:#aaa">(fault type indicated)</span></th>
-          <th rowspan="2">ISO<br>Zone</th>
+          <th rowspan="2" style="min-width:100px">Spike Energy<br><span style="font-size:8px;font-weight:400;color:#aaa">(gSE — bearing)</span></th>
+          <th rowspan="2">ISO 10816-3<br>Zone</th>
         </tr>
         <tr>
           <th style="background:#eef6ff;color:#1a4a7a">Vel RMS<br>(mm/s)</th>
@@ -305,42 +302,45 @@ input.vinp:focus{outline:none;border-color:#378ADD;background:#fff}
     </table>
   </div>
   <p style="margin-top:8px;font-size:10px;color:#aaa;line-height:1.5">
-    * Dominant frequency assumes a single dominant frequency in the broadband reading. For accurate spectral analysis, use a vibration analyser / FFT instrument.
-    Spike energy is a separate bearing condition indicator (not frequency-based).
+    ⚠ Broadband velocity and displacement alone cannot identify fault type or dominant frequency — a spectrum analyser (FFT) is required for that. These readings indicate severity only.
   </p>
 </div>
 
 <!-- ── What each column means ── -->
 <div class="card">
-  <div class="card-ttl">Understanding the Analysis Columns</div>
-  <div style="font-size:12px;color:#444;line-height:1.7">
-    <p><strong>Dominant Frequency</strong> — the single frequency that best explains both your velocity (mm/s) and displacement (µm) readings together.
-    It tells you <em>where</em> the vibration energy is concentrated. Since a real machine has many frequencies mixed, this is the strongest one dominating the broadband reading.</p>
+  <div class="card-ttl">Understanding the Measurements — Standards Reference</div>
+  <div style="font-size:12px;color:#444;line-height:1.8">
+
+    <p><strong>Velocity RMS (mm/s) — ISO 10816-3</strong><br>
+    The overall vibration severity of the machine casing. ISO 10816-3 defines four zones for pumps &gt;15 kW:
+    Zone A (0–2.3 mm/s) = new/good condition; Zone B (2.3–4.5) = acceptable long-term; Zone C (4.5–7.1) = investigate; Zone D (&gt;7.1) = danger, shut down.
+    Velocity is the most widely accepted broadband severity indicator for rotating machinery.</p>
+
     <br>
-    <p><strong>Closest Harmonic</strong> — compares your dominant frequency to the pump's running speed harmonics:
-    1× = 24.58 Hz, 2× = 49.17 Hz, 3× = 73.75 Hz. Matching a harmonic narrows down the mechanical cause.</p>
+
+    <p><strong>Displacement pk-pk (µm) — ISO 7919-3</strong><br>
+    Peak-to-peak shaft displacement measured at the bearing housing. ISO 7919-3 sets limits for pumps based on running speed.
+    At 1475 RPM, typical Zone A limit is ≈ 57 µm pk-pk. Displacement is most sensitive at low frequencies (shaft orbit / unbalance);
+    at high frequencies it becomes very small and less meaningful.</p>
+
     <br>
-    <table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:4px">
-      <tr style="background:#f5f5f3">
-        <th style="padding:6px 10px;text-align:left;font-size:10px;color:#888;border-bottom:1px solid #e2e5ea">Harmonic matched</th>
-        <th style="padding:6px 10px;text-align:left;font-size:10px;color:#888;border-bottom:1px solid #e2e5ea">Direction</th>
-        <th style="padding:6px 10px;text-align:left;font-size:10px;color:#888;border-bottom:1px solid #e2e5ea">Inference (fault type)</th>
-        <th style="padding:6px 10px;text-align:left;font-size:10px;color:#888;border-bottom:1px solid #e2e5ea">Your pump — where it appears</th>
-      </tr>
-      <tr><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">1× (24.58 Hz)</td><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">H or V</td><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">Unbalance / bent shaft / near-resonance</td><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3;color:#9b1c1c"><strong>PDE-V 26.1 Hz ← critical finding</strong></td></tr>
-      <tr><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">1× (24.58 Hz)</td><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">Axial</td><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">Near-resonance + axial thrust issue</td><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">PDE-A 29.3 Hz (1.2×)</td></tr>
-      <tr><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">2× (49.17 Hz)</td><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">Axial</td><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">Angular misalignment between motor–pump coupling</td><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3;color:#856404"><strong>MNDE-A ~50 Hz → check coupling</strong></td></tr>
-      <tr><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">2× (49.17 Hz)</td><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">H or V</td><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">Offset misalignment / mechanical looseness</td><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">MDE-H ~45 Hz (near 2×)</td></tr>
-      <tr><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">3× or higher</td><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">Any</td><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">Looseness, bearing cage, vane pass</td><td style="padding:6px 10px;border-bottom:1px solid #f3f3f3">MDE-V ~90 Hz (~3.7×)</td></tr>
-      <tr><td style="padding:6px 10px">Non-harmonic</td><td style="padding:6px 10px">Any</td><td style="padding:6px 10px">Bearing defect freq (BPFI / BPFO) or cavitation</td><td style="padding:6px 10px">Spike energy 6.2 at PDE → bearing wear</td></tr>
-    </table>
-    <p style="margin-top:10px">
-      <strong>What picture does this table show you?</strong>
-      Without a spectrum analyser you only see a single broadband number (e.g. 2.2 mm/s).
-      This table reverse-engineers the dominant frequency from the velocity + displacement pair, then maps it to a likely fault mechanism.
-      You can't distinguish unbalance from resonance from misalignment by velocity alone —
-      the dominant frequency is the key that separates them.
-    </p>
+
+    <p><strong>Spike Energy (gSE) — SKF / IRD Mechanalysis</strong><br>
+    A high-frequency stress-wave measurement (typically 5–50 kHz) that detects impacting in bearings.
+    Developed by IRD Mechanalysis and adopted by SKF. It is independent of running speed.
+    Typical alarm levels depend on machine speed and bearing size, but as a general guide:
+    &lt;0.25 gSE = good; 0.25–1.0 = monitor; 1.0–4.0 = schedule inspection; &gt;4.0 = bearing distress, plan replacement.
+    PDE readings at 6.2 / 4.6 / 4.2 gSE indicate active bearing distress at the pump drive end.</p>
+
+    <br>
+
+    <p><strong>Why velocity + displacement alone cannot tell you fault type</strong><br>
+    Broadband readings give you <em>how much</em> vibration — not <em>why</em>.
+    Unbalance, misalignment, looseness, and resonance can all produce similar broadband velocity values.
+    To identify fault type you need a <strong>spectrum analyser (FFT)</strong> which separates the signal into individual
+    frequency components (1×, 2×, sub-harmonic, bearing defect frequencies, etc.).
+    No calculation from broadband velocity + displacement alone can reliably substitute for FFT analysis.</p>
+
   </div>
 </div>
 
@@ -570,48 +570,6 @@ var ROWS = [
   {pt:'PDE',  full:'Pump DE',   dir:'A', vel:1.3,  disp:20, spike:'4.2',     cls:''}
 ];
 
-function calcHz(vel, disp) {
-  if (!vel || !disp) return null;
-  // f = v_rms × √2 / (π × D_pk-pk_in_mm)
-  return (vel * Math.SQRT2) / (Math.PI * (disp / 1000));
-}
-
-function harmonic(hz) {
-  if (!hz) return '—';
-  var d1=Math.abs(hz-RUN), d2=Math.abs(hz-RUN*2), d3=Math.abs(hz-RUN*3);
-  var mn=Math.min(d1,d2,d3);
-  if (mn===d1) return '1× ('+RUN+' Hz)';
-  if (mn===d2) return '2× ('+(RUN*2).toFixed(2)+' Hz)';
-  return '3× ('+(RUN*3).toFixed(2)+' Hz)';
-}
-
-function harmClass(hz) {
-  if (!hz) return 'bdn';
-  var d1=Math.abs(hz-RUN), d2=Math.abs(hz-RUN*2);
-  if (d1<=5) return 'bd1';
-  if (d2<=6) return 'bd2';
-  return 'bdx';
-}
-
-function getInference(hz, dir, vel) {
-  if (!hz || !vel) return '—';
-  // Below 1.5 mm/s = well inside Zone A — severity too low to infer any fault
-  if (vel < 1.5) return '<span style="color:#065f46">✅ Normal — within Zone A</span>';
-  var d1=Math.abs(hz-RUN), d2=Math.abs(hz-RUN*2), d3=Math.abs(hz-RUN*3);
-  var mn=Math.min(d1,d2,d3);
-  if (mn===d1) {
-    if (d1<=2) return '⚠ Near-resonance (fn ≈ 1×) — bore wear likely';
-    if (dir==='A') return 'Resonance + axial thrust / bent shaft';
-    return 'Unbalance / eccentricity / near-resonance';
-  }
-  if (mn===d2) {
-    if (dir==='A') return '⚠ Angular misalignment (motor–pump coupling)';
-    return 'Offset misalignment / mechanical looseness';
-  }
-  if (mn===d3) return 'Looseness / bearing cage / 3× excitation';
-  return 'Check bearing defect frequencies (BPFI/BPFO)';
-}
-
 function isoZone(vel) {
   if (!vel) return '—';
   if (vel<=2.3) return '<span class="zA">A ✅</span>';
@@ -620,22 +578,28 @@ function isoZone(vel) {
   return '<span class="zD">D 🔴</span>';
 }
 
+function spikeCell(spike) {
+  if (!spike || spike==='—') return '<span style="color:#bbb">—</span>';
+  // parse numeric value for colouring (use first number if multiple)
+  var num = parseFloat(spike);
+  var col = num >= 4.0 ? '#9b1c1c' : num >= 1.0 ? '#856404' : '#065f46';
+  var wt  = num >= 4.0 ? '700' : '400';
+  return '<span style="color:'+col+';font-weight:'+wt+'">'+spike+' gSE</span>';
+}
+
 function buildVibTable() {
   var tb = gid('vtbody');
   tb.innerHTML = '';
 
   // group rows to merge Point column
-  var prev='', span=0, firstIdx=[];
+  var prev='', firstIdx=[];
   ROWS.forEach(function(r,i){ if(r.pt!==prev){firstIdx.push(i);prev=r.pt;} });
 
   ROWS.forEach(function(row, idx) {
-    var hz   = calcHz(row.vel, row.disp);
-    var hzTxt = hz ? hz.toFixed(1)+' Hz' : '—';
-    var hc   = harmClass(hz);
-    var tr   = document.createElement('tr');
+    var tr = document.createElement('tr');
     tr.className = row.cls;
 
-    // count how many rows share this point
+    // count how many rows share this point (for rowspan)
     var isFirst = firstIdx.indexOf(idx) >= 0;
     var ptCount = 0;
     if (isFirst) { ROWS.forEach(function(r){ if(r.pt===row.pt) ptCount++; }); }
@@ -648,9 +612,7 @@ function buildVibTable() {
       '<td style="font-weight:600;color:#555">'+row.dir+'</td>'+
       '<td><input class="vinp" type="number" value="'+row.vel+'" step="0.1" min="0" data-i="'+idx+'" data-f="vel"></td>'+
       '<td><input class="vinp" type="number" value="'+row.disp+'" step="1" min="0" data-i="'+idx+'" data-f="disp"></td>'+
-      '<td><span class="bd '+hc+'">'+hzTxt+'</span></td>'+
-      '<td style="font-size:11px;color:#555">'+harmonic(hz)+'</td>'+
-      '<td style="font-size:11px;color:#444;text-align:left;padding-left:10px">'+getInference(hz,row.dir,row.vel)+'</td>'+
+      '<td>'+spikeCell(row.spike)+'</td>'+
       '<td>'+isoZone(row.vel)+'</td>';
 
     tb.appendChild(tr);
@@ -678,4 +640,12 @@ gid('bNow').addEventListener('click',  function(){ setMode(26.1, 3, 'bNow'); });
 gid('bWorn').addEventListener('click', function(){ setMode(25.1, 4, 'bWorn'); });
 gid('bRes').addEventListener('click',  function(){ setMode(24.58,5, 'bRes'); });
 
-// ══════════════════════════════════════════�
+// ════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════
+refreshGauge();
+buildVibTable();
+</script>
+</body>
+</html>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
